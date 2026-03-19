@@ -9,7 +9,7 @@ export interface StructCriticResponse {
 
 export class CriticService {
   /**
-   * Evaluates a Minister's proposal before it reaches the Governor.
+   * Evaluates an Advisor's proposal before it reaches the Covernor.
    * In a production environment, this would call a fast/cheap LLM (e.g., GPT-3.5-Turbo)
    * to catch obvious hallucinations or formatting errors.
    */
@@ -28,7 +28,7 @@ export class CriticService {
       };
     }
 
-    // E.g., If the Minister hallucinates an actionType that doesn't exist
+    // E.g., If the Advisor hallucinates an actionType that doesn't exist
     const validActionTypes = ['READ_DATABASE', 'MODIFY_DATABASE', 'TRANSFER_FUNDS', 'HTTP_REQUEST', 'FILE_SYSTEM_OPERATOR', 'SLACK_OPERATOR', 'ZENDESK_OPERATOR', 'POSTGRESQL_QUERY'];
     if (!validActionTypes.includes(recOpt.actionType)) {
       return {
@@ -38,7 +38,7 @@ export class CriticService {
       };
     }
 
-    // If it passes basic sanity checks, the Critic approves it for the Governor.
+    // If it passes basic sanity checks, the Critic approves it for the Covernor.
     return { 
         isValid: true,
         reasonCode: 'APPROVED',

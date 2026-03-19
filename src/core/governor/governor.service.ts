@@ -60,7 +60,7 @@ export class GovernorService {
        try {
           contract.allowedParameterSchema.parse(recommendedOption.parameters);
        } catch (error: any) {
-          logger.warn(`[Governor] Operator Allowlist Violation`, { issues: error.issues });
+          logger.warn(`[Covernor] Operator Allowlist Violation`, { issues: error.issues });
           throw new GovernorRejectionError(proposalId, `Operator Contract Violation: The provided parameters for ${recommendedOption.actionType} strictly violated explicit allowlists. Details: ${error.message}`);
        }
     }
@@ -103,7 +103,7 @@ export class GovernorService {
     // Phase 2: Capability Escalation Guard
     if (decisionType.startsWith('APPROVE') && capability.requiresHumanReview) {
          decisionType = 'BLOCK_AND_ESCALATE';
-         logger.info(`[Governor] Upgrading decision to ESCALATE because Capability '${capability.id}' strictly requires Human Review.`);
+         logger.info(`[Covernor] Upgrading decision to ESCALATE because Capability '${capability.id}' strictly requires Human Review.`);
     }
 
     // ------------------------------------------------------------------
@@ -127,7 +127,7 @@ export class GovernorService {
 
            const TENANT_VELOCITY_LIMIT = 5; 
            if (currentCount > TENANT_VELOCITY_LIMIT) {
-              logger.warn(`[Governor] ${proposal.tenantId} exceeded Velocity Limit for ${recommendedOption.actionType}. Shield active.`);
+              logger.warn(`[Covernor] ${proposal.tenantId} exceeded Velocity Limit for ${recommendedOption.actionType}. Shield active.`);
               decisionType = 'BLOCK_AND_ESCALATE';
               highestRisk = 'CRITICAL';
               const reason = {
@@ -149,7 +149,7 @@ export class GovernorService {
                
                const RECIPIENT_VELOCITY_LIMIT = 2; 
                if (recipientCount > RECIPIENT_VELOCITY_LIMIT) {
-                  logger.warn(`[Governor] ${proposal.tenantId} exceeded Recipient Velocity Limit for ${recipient}.`);
+                  logger.warn(`[Covernor] ${proposal.tenantId} exceeded Recipient Velocity Limit for ${recipient}.`);
                   decisionType = 'BLOCK_AND_ESCALATE';
                   highestRisk = 'CRITICAL';
                   const reason = {
@@ -164,7 +164,7 @@ export class GovernorService {
                }
            }
        } catch (redisError: any) {
-           logger.error(`[Governor] INFRASTRUCTURE ALERT: Redis Velocity Cache Unavailable. Failing Closed for ${recommendedOption.actionType}.`, { error: redisError.message });
+           logger.error(`[Covernor] INFRASTRUCTURE ALERT: Redis Velocity Cache Unavailable. Failing Closed for ${recommendedOption.actionType}.`, { error: redisError.message });
            decisionType = 'BLOCK_AND_ESCALATE';
            highestRisk = 'CRITICAL';
            const reason = {
@@ -179,7 +179,7 @@ export class GovernorService {
        }
     }
 
-    // TODO: In a production system, if the primary is rejected, the Governor should 
+    // TODO: In a production system, if the primary is rejected, the Covernor should 
     // evaluate the proposal.fallbackOptions array before outright rejecting.
 
     const finalConstraints = Object.keys(combinedConstraints).length > 0 ? combinedConstraints : undefined;
@@ -254,7 +254,7 @@ export class GovernorService {
       proposalId,
       decisionId: decision.id,
       actionDetails: {
-        actor: 'Governor',
+        actor: 'Covernor',
         action: 'evaluate_proposal',
         decision: decisionType,
         riskLevel: highestRisk,

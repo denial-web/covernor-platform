@@ -2,8 +2,8 @@
 
 Most AI agent systems collapse because they lack rigid boundaries. A stable Covernor architecture enforces these boundaries through strict, strongly-typed objects. If these schemas are validated at runtime, the system cannot drift into unsafe autonomous execution.
 
-## 1. The Intake Interface (User -> Minister)
-Purpose: Defines exactly what the Minister is allowed to know about the objective. Prevention of reading unrelated system state.
+## 1. The Intake Interface (User -> Advisor)
+Purpose: Defines exactly what the Advisor is allowed to know about the objective. Prevention of reading unrelated system state.
 ```json
 {
   "taskId": "uuid",
@@ -15,8 +15,8 @@ Purpose: Defines exactly what the Minister is allowed to know about the objectiv
 }
 ```
 
-## 2. The Proposal Interface (Minister -> Critic -> Governor)
-Purpose: The Minister's output. Must never contain executable code. Contains described intentions separated into primary and fallback options.
+## 2. The Proposal Interface (Advisor -> Critic -> Covernor)
+Purpose: The Advisor's output. Must never contain executable code. Contains described intentions separated into primary and fallback options.
 ```json
 {
   "proposalId": "uuid",
@@ -36,7 +36,7 @@ Purpose: The Minister's output. Must never contain executable code. Contains des
 }
 ```
 
-## 3. The Decision Interface (Governor -> Operator)
+## 3. The Decision Interface (Covernor -> Operator)
 Purpose: Absolute authority record. Dictates exactly what Operator is allowed to do.
 ```json
 {
@@ -52,7 +52,7 @@ Purpose: Absolute authority record. Dictates exactly what Operator is allowed to
 ```
 
 ## 4. The Approval Token Interface (System Cryptography)
-Purpose: Cryptographically guarantees an Operator only executes Governor-approved tasks without replay.
+Purpose: Cryptographically guarantees an Operator only executes Covernor-approved tasks without replay.
 ```json
 {
   "nonce": "uuid",

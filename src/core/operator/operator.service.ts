@@ -45,7 +45,7 @@ export class OperatorService {
   }
 
   /**
-   * Retrieves an Operator's formal contract to allow the Governor to enforce allowlists.
+   * Retrieves an Operator's formal contract to allow the Covernor to enforce allowlists.
    */
   getToolContract(actionType: string) {
     const tool = this.tools.get(actionType);
@@ -53,7 +53,7 @@ export class OperatorService {
   }
 
   /**
-   * Executes a Governor-approved decision.
+   * Executes a Covernor-approved decision.
    */
   async executeDecision(decisionId: string) {
     try {
@@ -64,7 +64,7 @@ export class OperatorService {
         throw new Error("Cannot execute a non-approved decision.");
     }
 
-    // Extract the action parameters from when the Minister recommended them
+    // Extract the action parameters from when the Advisor recommended them
     const actionPayload: any = decision.proposal.recommendedOption;
     
     // ------------------------------------------------------------------
@@ -115,7 +115,7 @@ export class OperatorService {
        token.tenantId, token.taskId, token.proposalId, token.decisionId, actionPayload, token.nonce
     );
     if (derivedHash !== token.payloadHash) {
-       throw new Error("Security Violation: Action payload was mutated after Governor approval. Payload hashes do not match.");
+       throw new Error("Security Violation: Action payload was mutated after Covernor approval. Payload hashes do not match.");
     }
 
     // 5. Consume Single-Use Token

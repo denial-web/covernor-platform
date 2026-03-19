@@ -33,7 +33,7 @@ export const CriticOutputSchema = z.object({
 
 export class SchemaValidator {
   /**
-   * Deterministically validates the Minister's raw LLM JSON payload.
+   * Deterministically validates the Advisor's raw LLM JSON payload.
    * If it fails Zod parse, it throws immediately.
    */
   static validateProposalPayload(payload: any) {

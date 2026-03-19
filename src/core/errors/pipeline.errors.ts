@@ -4,7 +4,7 @@ export class GovernorRejectionError extends Error {
   public proposalId: string;
 
   constructor(proposalId: string, reason: string, alternative?: string) {
-    super(`Governor Rejected Proposal ${proposalId}: ${reason}`);
+    super(`Covernor Rejected Proposal ${proposalId}: ${reason}`);
     this.name = 'GovernorRejectionError';
     this.proposalId = proposalId;
     this.rejectionReason = reason;
@@ -17,7 +17,7 @@ export class GovernorEscalationError extends Error {
   public escalationReason: string;
 
   constructor(proposalId: string, reason: string) {
-    super(`Governor Escalated Proposal ${proposalId} for Manual Review: ${reason}`);
+    super(`Covernor Escalated Proposal ${proposalId} for Manual Review: ${reason}`);
     this.name = 'GovernorEscalationError';
     this.proposalId = proposalId;
     this.escalationReason = reason;

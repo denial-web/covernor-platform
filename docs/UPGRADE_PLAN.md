@@ -9,7 +9,7 @@ This document is the technical specification for upgrading the platform from a s
 ## Current Architecture (as-built)
 
 ```
-[REST API] → [BullMQ Queue] → [Minister] → [Critic] → [Governor] → [Operator] → [Tools]
+[REST API] → [BullMQ Queue] → [Advisor] → [Critic] → [Covernor] → [Operator] → [Tools]
                                                             ↓
                                                    [Human Approval Console]
 ```
@@ -18,9 +18,9 @@ This document is the technical specification for upgrading the platform from a s
 
 | Component | Path | Purpose |
 |---|---|---|
-| Minister | `src/core/minister/` | LLM planner (OpenAI, Anthropic, Ollama, Custom) |
+| Advisor | `src/core/minister/` | LLM planner (OpenAI, Anthropic, Ollama, Custom) |
 | Critic | `src/core/critic/` | Zod schema-lock validation, hallucination rejection |
-| Governor | `src/core/governor/` | Deterministic policy engine, velocity guards, capability auth |
+| Covernor | `src/core/governor/` | Deterministic policy engine, velocity guards, capability auth |
 | Operator | `src/core/operator/` | Sandboxed execution with contracts, rollback, idempotency |
 | Policy Engine | `src/core/governor/policies/engine.ts` | Evaluates DENY/CONSTRAINT/ESCALATE/DUAL_APPROVAL rules |
 | Capability Registry | `src/core/policy/capability.registry.ts` | Maps capabilities to tools, enforces human review flags |
@@ -55,11 +55,11 @@ This document is the technical specification for upgrading the platform from a s
        ↓
 [Interaction Gateway]        ← normalizes requests, binds session/tenant/identity
        ↓
-[Minister]                   ← LLM proposes (unchanged)
+[Advisor]                   ← LLM proposes (unchanged)
        ↓
 [Critic]                     ← schema validation (unchanged)
        ↓
-[Governor]                   ← deterministic policy (unchanged)
+[Covernor]                   ← deterministic policy (unchanged)
        ↓
 [Operator]                   ← sandboxed execution (unchanged)
        ↓
@@ -70,7 +70,7 @@ This document is the technical specification for upgrading the platform from a s
 
 > **Shells talk. Core decides. Operators execute.**
 
-No shell may call tools directly. All tool calls pass through the gateway and Governor. The governed core stays unchanged.
+No shell may call tools directly. All tool calls pass through the gateway and Covernor. The governed core stays unchanged.
 
 ---
 
@@ -101,7 +101,7 @@ export interface AgentShellAdapter {
 export interface InteractionGateway {
   normalizeIncoming(input: ExternalShellMessage): Promise<NormalizedRequest>;
   buildExecutionContext(req: NormalizedRequest): Promise<ExecutionContext>;
-  routeToMinister(ctx: ExecutionContext): Promise<GovernedPlan>;
+  routeToAdvisor(ctx: ExecutionContext): Promise<GovernedPlan>;
   formatOutgoing(result: GovernedResult, shell: string): Promise<ShellResponse>;
 }
 ```
@@ -110,7 +110,7 @@ export interface InteractionGateway {
 
 - All existing API endpoints continue to work unchanged
 - Gateway service can be called by both the existing REST API and new shell adapters
-- Zero changes to Minister, Critic, Governor, or Operator
+- Zero changes to Advisor, Critic, Covernor, or Operator
 - All 10 security controls pass verification
 
 ---
@@ -160,8 +160,8 @@ Add conversational memory (for shell UX) and governed memory (for policy decisio
 
 ### Files to create
 
-- `src/core/memory/conversational.memory.ts` — Shell-scoped, session-bound, not used by Governor
-- `src/core/memory/governed.memory.ts` — Write-protected, only Governor-approved facts
+- `src/core/memory/conversational.memory.ts` — Shell-scoped, session-bound, not used by Covernor
+- `src/core/memory/governed.memory.ts` — Write-protected, only Covernor-approved facts
 - `src/core/interfaces/memory.interface.ts` — Memory provider interface
 
 ### Prisma schema additions
@@ -196,13 +196,13 @@ model GovernedMemory {
 
 ### Critical constraint
 
-> Conversational memory is NEVER used for Governor policy decisions. Governed memory is NEVER written by shells directly — only through approved pipeline actions.
+> Conversational memory is NEVER used for Covernor policy decisions. Governed memory is NEVER written by shells directly — only through approved pipeline actions.
 
 ### Acceptance criteria
 
 - Conversational memory persists across session turns
 - Governed memory stores verified facts (e.g., user identity confirmed)
-- Governor can read governed memory for risk context
+- Covernor can read governed memory for risk context
 - Shell memory injection cannot influence policy decisions
 
 ---
@@ -210,7 +210,7 @@ model GovernedMemory {
 ## Phase 4: Agent Loop (Multi-Step Governed Execution)
 
 ### Goal
-Allow shells to submit multi-step objectives where the agent loop proposes, executes, observes, and continues — with every step individually Governor-evaluated.
+Allow shells to submit multi-step objectives where the agent loop proposes, executes, observes, and continues — with every step individually Covernor-evaluated.
 
 ### Files to modify
 
@@ -219,15 +219,15 @@ Allow shells to submit multi-step objectives where the agent loop proposes, exec
 ### Key constraints
 
 - Maximum loop steps defined by policy (default: 5)
-- Each step is a full Minister → Critic → Governor → Operator pass
+- Each step is a full Advisor → Critic → Covernor → Operator pass
 - Output from step N is NOT trusted as input for step N+1 without re-validation
-- Loop can be interrupted by Governor escalation at any step
+- Loop can be interrupted by Covernor escalation at any step
 - All steps are individually audit-logged
 
 ### Acceptance criteria
 
-- Multi-step tasks complete autonomously within Governor bounds
-- Governor can halt the loop at any step
+- Multi-step tasks complete autonomously within Covernor bounds
+- Covernor can halt the loop at any step
 - Audit trail shows each individual step with its own decision
 - Shell receives progress updates per step
 
@@ -267,7 +267,7 @@ Extend the policy engine to support per-shell rules. Build a second adapter (Tel
 1. Tenant policy (highest)
 2. Shell policy
 3. Tool capability registry
-4. Governor decision
+4. Covernor decision
 5. Operator contract (lowest, always enforced)
 
 ### Acceptance criteria
@@ -275,7 +275,7 @@ Extend the policy engine to support per-shell rules. Build a second adapter (Tel
 - Different shells have different tool access
 - Public shell cannot access financial tools
 - Internal shell has broader access
-- Same Governor evaluates all requests regardless of shell
+- Same Covernor evaluates all requests regardless of shell
 - Policy precedence is deterministic and auditable
 
 ---
@@ -283,7 +283,7 @@ Extend the policy engine to support per-shell rules. Build a second adapter (Tel
 ## Phase 6: Governed Skill / Plugin SDK
 
 ### Goal
-Allow external skills to be registered with manifests declaring risk level, required approvals, and supported shells. All skill execution goes through Governor.
+Allow external skills to be registered with manifests declaring risk level, required approvals, and supported shells. All skill execution goes through Covernor.
 
 ### Files to create
 
@@ -318,7 +318,7 @@ export interface SkillPlugin {
 ### Acceptance criteria
 
 - Skills register with manifests
-- Governor evaluates skill execution like any other tool
+- Covernor evaluates skill execution like any other tool
 - Skills are scoped to allowed shells and data classes
 - Unregistered skills cannot execute
 
@@ -326,10 +326,10 @@ export interface SkillPlugin {
 
 ## Constraints for ALL phases
 
-1. **Governor is never bypassed** — every tool/skill execution passes through policy evaluation
+1. **Covernor is never bypassed** — every tool/skill execution passes through policy evaluation
 2. **Audit chain is never broken** — every action is hash-chain logged
 3. **Capability tokens are always required** — no direct tool execution without ECDSA verification
-4. **Critic is never skipped** — all LLM output is schema-validated before Governor
+4. **Critic is never skipped** — all LLM output is schema-validated before Covernor
 5. **Tenant isolation is maintained** — no cross-tenant data access
 6. **Existing API endpoints remain functional** — backward compatibility throughout
 7. **TypeScript strict mode** — all new code compiles under `strict: true`

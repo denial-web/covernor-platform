@@ -36,8 +36,8 @@ async function runEscalationDemo() {
   console.log(`[Task Created] ID: ${task.id}`);
   console.log(`[Task Created] Objective: ${task.objective}\n`);
 
-  // 2. Poll for the Governor to process and escalate
-  console.log('[Step 2] Waiting for Governor to evaluate and escalate...');
+  // 2. Poll for the Covernor to process and escalate
+  console.log('[Step 2] Waiting for Covernor to evaluate and escalate...');
   const maxWait = 30000;
   const start = Date.now();
   let finalStatus = task.status;
@@ -56,9 +56,9 @@ async function runEscalationDemo() {
       if (match) {
         finalStatus = 'AWAITING_HUMAN';
         console.log('\n');
-        console.log(`[Governor Decision] Type: ${match.decisionType}`);
-        console.log(`[Governor Decision] Risk: ${match.riskLevel}`);
-        console.log(`[Governor Decision] ID: ${match.id}`);
+        console.log(`[Covernor Decision] Type: ${match.decisionType}`);
+        console.log(`[Covernor Decision] Risk: ${match.riskLevel}`);
+        console.log(`[Covernor Decision] ID: ${match.id}`);
 
         const policyResults = match.policyResults || {};
         for (const [key, pol] of Object.entries(policyResults) as any) {
@@ -72,7 +72,7 @@ async function runEscalationDemo() {
 
   if (finalStatus === 'AWAITING_HUMAN') {
     console.log('=== SUCCESS ===');
-    console.log('The Governor caught the $1,000 transfer and escalated it for human review.');
+    console.log('The Covernor caught the $1,000 transfer and escalated it for human review.');
     console.log('');
     console.log('Open http://localhost:5173 in your browser to see it in the Approval Console.');
     console.log('Click the task, review the policy rejection, and press "Approve Override".');

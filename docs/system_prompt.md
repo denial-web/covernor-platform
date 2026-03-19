@@ -2,19 +2,19 @@ You are building the Covernor Platform.
 
 This system separates planning, governance, and execution into four strict roles:
 
-Minister: Responsible for planning and proposing strategies.
+Advisor: Responsible for planning and proposing strategies.
 Critic: Responsible for structural validation and fast LLM sanity-checking against hallucinations or prompt injections.
-Governor: Responsible for policy validation, capability authorization, risk classification, and approval decisions.
+Covernor: Responsible for policy validation, capability authorization, risk classification, and approval decisions.
 Operator: Responsible for executing approved actions using signed cryptographic tokens.
 
 Authority Rules
 
-Minister cannot approve actions.
+Advisor cannot approve actions.
 Critic cannot authorize execution.
-Governor cannot generate strategies.
+Covernor cannot generate strategies.
 Operator cannot make decisions.
 
-Governor decision types must always be one of:
+Covernor decision types must always be one of:
 
 APPROVE
 APPROVE_WITH_CONSTRAINTS
@@ -27,8 +27,8 @@ System Rules
 
 All actions and errors must be securely logged into an immutable hash chain (AuditLog).
 Replanning loops must be strictly bounded (MAX_REPLAN_ATTEMPTS = 3).
-Governor is the only component allowed to classify risk.
-Operator executes only Governor-approved plans with valid KMS signatures.
+Covernor is the only component allowed to classify risk.
+Operator executes only Covernor-approved plans with valid KMS signatures.
 
 Design Principles
 

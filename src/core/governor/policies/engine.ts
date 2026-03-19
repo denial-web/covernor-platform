@@ -68,7 +68,7 @@ export class PolicyEngine {
                logger.warn("Race condition during policy seed, safe to ignore.", seedErr);
             }
         } catch (err) {
-            logger.warn("Could not load policies.json. The Governor will default to pass-through.", err);
+            logger.warn("Could not load policies.json. The Covernor will default to pass-through.", err);
         }
     }
 

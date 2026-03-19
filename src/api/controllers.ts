@@ -153,7 +153,7 @@ export const overrideDecision = async (req: Request, res: Response) => {
     // Phase 19: Expiration TTL on Pending Decisions (4 hours)
     if (Date.now() - decision.createdAt.getTime() > 1000 * 60 * 60 * 4) {
         logger.error(`[Security API] Decision ${decisionId} expired before collecting K-of-N signatures.`);
-        return res.status(403).json({ error: 'Security Violation: This decision has expired waiting for human approval. The Minister must replan.' });
+        return res.status(403).json({ error: 'Security Violation: This decision has expired waiting for human approval. The Advisor must replan.' });
     }
 
     currentApprovers.push(adminUserId);
@@ -324,7 +324,7 @@ export const getMetrics = async (req: Request, res: Response) => {
 
 /**
  * AI Feedback Loop API: Exports rejected decisions as JSONL for LLM Fine-Tuning.
- * Grabs REJECT_AND_REPLAN or BLOCK_AND_ESCALATE proposals & pair them with the Governor's reason.
+ * Grabs REJECT_AND_REPLAN or BLOCK_AND_ESCALATE proposals & pair them with the Covernor's reason.
  */
 export const getTrainingDataset = async (req: Request, res: Response) => {
   try {
@@ -374,7 +374,7 @@ export const getTrainingDataset = async (req: Request, res: Response) => {
     }
 
     res.setHeader('Content-Type', 'application/jsonl');
-    res.setHeader('Content-Disposition', 'attachment; filename="minister_finetuning_dataset.jsonl"');
+    res.setHeader('Content-Disposition', 'attachment; filename="advisor_finetuning_dataset.jsonl"');
     res.send(jsonlOutput);
 
   } catch (error: any) {
@@ -384,7 +384,7 @@ export const getTrainingDataset = async (req: Request, res: Response) => {
 };
 
 /**
- * Policy Registry API: Rolls back the active Governor Policy to a previous hash.
+ * Policy Registry API: Rolls back the active Covernor Policy to a previous hash.
  */
 export const rollbackPolicy = async (req: Request, res: Response) => {
   try {
@@ -409,7 +409,7 @@ export const rollbackPolicy = async (req: Request, res: Response) => {
       })
     ]);
 
-    logger.info(`[Policy Registry] Governor brain successfully rolled back to version ${versionHash}`);
+    logger.info(`[Policy Registry] Covernor brain successfully rolled back to version ${versionHash}`);
     res.json({ message: `Successfully rolled back active policy to version: ${versionHash}` });
   } catch (error: any) {
     logger.error("Failed to rollback policy", { error: error.message });

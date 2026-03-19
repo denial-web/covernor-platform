@@ -12,10 +12,10 @@ Unlike typical LLM agent frameworks (like LangChain or AutoGPT) that give a sing
 
 It guarantees enterprise safety by separating the *Intelligence* (LLM) from the *Authority* (Deterministic Code).
 
-1. **Minister (Planner)**: An LLM that translates natural language objectives into structured JSON proposals. It *cannot* execute any actions. It can only propose them.
-2. **Critic (Self-Reflection)**: A fast, lightweight LLM gatekeeper that intercepts the Minister’s proposal to catch obvious hallucinated tool calls or missing parameters before heavy processing.
-3. **Governor (Risk Engine)**: A deterministic, math-driven TypeScript rules engine. It evaluates the Proposal against strict JSON/TypeScript policies (e.g., limits, access lists). It does not use AI. It either `APPROVES`, `REJECT_AND_REPLANS`, or `BLOCK_AND_ESCALATES`.
-4. **Operator (Executor)**: The execution sandbox. Only proposals explicitly signed by the Governor can be executed here. Contains concrete tools (PostgreSQL, HTTPS, FileSystem, Slack).
+1. **Advisor (Planner)**: An LLM that translates natural language objectives into structured JSON proposals. It *cannot* execute any actions. It can only propose them.
+2. **Critic (Self-Reflection)**: A fast, lightweight LLM gatekeeper that intercepts the Advisor’s proposal to catch obvious hallucinated tool calls or missing parameters before heavy processing.
+3. **Covernor (Risk Engine)**: A deterministic, math-driven TypeScript rules engine. It evaluates the Proposal against strict JSON/TypeScript policies (e.g., limits, access lists). It does not use AI. It either `APPROVES`, `REJECT_AND_REPLANS`, or `BLOCK_AND_ESCALATES`.
+4. **Operator (Executor)**: The execution sandbox. Only proposals explicitly signed by the Covernor can be executed here. Contains concrete tools (PostgreSQL, HTTPS, FileSystem, Slack).
 
 ---
 
@@ -24,16 +24,16 @@ It guarantees enterprise safety by separating the *Intelligence* (LLM) from the 
 When a new Task is ingested, it enters the `WorkflowCoordinator`:
 
 1. **Planning**: 
-   - Extract `Objective` -> Pass to `MinisterService`.
-   - Minister generates a `Proposal` (containing an `actionType` and JSON `parameters`).
+   - Extract `Objective` -> Pass to `AdvisorService`.
+   - Advisor generates a `Proposal` (containing an `actionType` and JSON `parameters`).
 2. **Sanity Check**:
    - Proposal passes to `CriticService`.
-   - If flawed (e.g., missing parameters, invalid action), it is immediately rejected, sending a feedback string back to the Minister for a Retry.
+   - If flawed (e.g., missing parameters, invalid action), it is immediately rejected, sending a feedback string back to the Advisor for a Retry.
 3. **Evaluation**:
-   - If Critic passes, Proposal moves to `GovernorService`.
-   - Governor evaluates the payload against deterministic policies.
+   - If Critic passes, Proposal moves to `CovernorService`.
+   - Covernor evaluates the payload against deterministic policies.
    - If safe, returns `APPROVE_WITH_CONSTRAINTS`.
-   - If unsafe but fixable, returns `REJECT_AND_REPLAN`. The Workflow loop captures this rejection and prompts the Minister to try again. (Max 3 replans).
+   - If unsafe but fixable, returns `REJECT_AND_REPLAN`. The Workflow loop captures this rejection and prompts the Advisor to try again. (Max 3 replans).
    - If critically unsafe (e.g., $1,000 refund), returns `BLOCK_AND_ESCALATE`.
 4. **Execution or Escalation**:
    - If Approved -> `OperatorService` executes the payload using Sandboxed Tools.
@@ -50,8 +50,8 @@ The platform is heavily stateful to allow for async human escalations and comple
 | Model | Description |
 |---|---|
 | `Task` | Represents the top-level User Request. Contains natural language `objective` and `status` (`PENDING`, `COMPLETED`, `FAILED`, `AWAITING_HUMAN`). |
-| `Proposal` | Created by the Minister. Belongs to a Task. Contains the raw LLM JSON payloads (`recommendedOption`), and `contextSignals`. |
-| `Decision` | Created by the Governor. Belongs to a Proposal. Contains `decisionType` (e.g., `APPROVED`, `ESCALATE`), and the deterministic `policyResults`. |
+| `Proposal` | Created by the Advisor. Belongs to a Task. Contains the raw LLM JSON payloads (`recommendedOption`), and `contextSignals`. |
+| `Decision` | Created by the Covernor. Belongs to a Proposal. Contains `decisionType` (e.g., `APPROVED`, `ESCALATE`), and the deterministic `policyResults`. |
 | `ExecutionReport` | Created by the Operator. Belongs to a Decision. Captures execution status and runtime errors. |
 | `AuditLog` | Global event log capturing exhaustive JSON snapshots of every pipeline stage. |
 
@@ -69,7 +69,7 @@ The platform currently operates as a social-media listening SaaS.
 
 ## 🧑‍⚖️ 5. Human-in-the-Loop Escalations (Phase 2)
 
-If the Governor catches a high-risk policy violation (e.g., `POL_03_REQUIRE_HUMAN_APPROVAL` triggers because a financial transaction exceeds $500), it escalates:
+If the Covernor catches a high-risk policy violation (e.g., `POL_03_REQUIRE_HUMAN_APPROVAL` triggers because a financial transaction exceeds $500), it escalates:
 
 - The Workflow loop mathematically pauses.
 - The Task enters `AWAITING_HUMAN`.
@@ -83,7 +83,7 @@ If the Governor catches a high-risk policy violation (e.g., `POL_03_REQUIRE_HUMA
 - **JSON Winston Logger**: Global `console.logs` are banned. Everything passes through a structured `Winston` instance formatting telemetry as JSON for Datadog or ELK.
 - **Platform Metrics API**: The `GET /api/metrics` endpoint queries Prisma natively to aggregate system load.
   - Aggregates Tasks completed vs. Failed.
-  - Generates ratios of Governor Rejections vs Escalations.
+  - Generates ratios of Covernor Rejections vs Escalations.
   - Calculates rolling execution latency across the entire LLM pipeline.
 
 ---
@@ -103,12 +103,12 @@ Every Operator implements an `OperatorContract` guaranteeing max execution time 
 
 ## 🧠 8. Scale Phase: Learning Loops (Phase 5)
 
-To prevent the LLM (`Minister`) from continuously making the same mistakes and wasting Governor cycles, we implemented a data feedback loop:
+To prevent the LLM (`Advisor`) from continuously making the same mistakes and wasting Covernor cycles, we implemented a data feedback loop:
 
 - **JSONL Dataset Exporter (`GET /api/training/dataset`)**: A dedicated API that queries the DB for all `REJECT_AND_REPLAN` and `BLOCK_AND_ESCALATE` decisions.
 - It extracts the original `Task.objective`, the flawed `Proposal` JSON, and the correcting constraint requirement.
 - It formats this pair into strict JSON Lines format (`.jsonl`), ready to be imported directly into OpenAI/Gemini for LLM Fine-Tuning jobs.
-- **Benefit**: Over time, your Minister LLM learns your proprietary Governor rules natively.
+- **Benefit**: Over time, your Advisor LLM learns your proprietary Covernor rules natively.
 
 ---
 
@@ -116,7 +116,7 @@ To prevent the LLM (`Minister`) from continuously making the same mistakes and w
 
 **"I am building an enterprise Agentic SaaS platform. Please review the architectural breakdown above. Specifically:*
 
-1. *Are there any vulnerabilities in the separation of concerns between the Minister (LLM) and Governor (Code)?*
+1. *Are there any vulnerabilities in the separation of concerns between the Advisor (LLM) and Covernor (Code)?*
 2. *Is the database schema sufficient to support long-running, asynchronous LLM workflows that require human-in-the-loop intervention?*
 3. *What are the potential failure points in the Webhook parsing and execution loop?*
 4. *How would you rate the readiness of this architecture for securing a production LLM system from Prompt Injections or unauthorized tool mutation?"*

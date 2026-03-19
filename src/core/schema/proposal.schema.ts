@@ -10,8 +10,8 @@ export const ActionSchema = z.object({
 
 export const ProposalJSONSchema = z.object({
   version: z.literal("1.0.0").describe("The semantic version of the ProposalJSON schema. Must strictly be '1.0.0'"),
-  recommendedOption: ActionSchema.describe("The Minister's primary strategic recommendation."),
-  fallbackOptions: z.array(ActionSchema).min(1).describe("At least one fallback strategic option if the Governor rejects the primary.")
+  recommendedOption: ActionSchema.describe("The Advisor's primary strategic recommendation."),
+  fallbackOptions: z.array(ActionSchema).min(1).describe("At least one fallback strategic option if the Covernor rejects the primary.")
 });
 
 export type ProposalJSON = z.infer<typeof ProposalJSONSchema>;

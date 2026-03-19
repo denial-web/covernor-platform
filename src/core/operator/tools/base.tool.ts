@@ -9,7 +9,7 @@ export interface ToolResult {
 }
 
 export interface ToolContext {
-  constraints?: Record<string, any>; // Injected via Governor
+  constraints?: Record<string, any>; // Injected via Covernor
   rollbackActive?: boolean;
   abortSignal?: AbortSignal; // Injected via OperatorContract bounds
   providerIdempotencyKey?: string; // Phase 12 Execution Idempotency

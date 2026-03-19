@@ -189,7 +189,7 @@ Settings saved through the UI are encrypted (AES-256) and stored in the database
 
 ### No LLM (Mock Mode)
 
-This is the default. When no LLM keys are configured, the Minister uses a built-in mock strategy that returns sensible test data. The full pipeline still runs — Governor evaluation, escalation, tokens, audit — everything except the actual LLM call.
+This is the default. When no LLM keys are configured, the Advisor uses a built-in mock strategy that returns sensible test data. The full pipeline still runs — Covernor evaluation, escalation, tokens, audit — everything except the actual LLM call.
 
 No configuration needed. Just run `npm run dev`.
 
@@ -281,14 +281,14 @@ npm run demo-escalation
 
 This script:
 1. Creates a task: *"Issue a $1,000 refund to user account 4492"*
-2. The Minister proposes a `TRANSFER_FUNDS` action with `amount: 1000`
-3. The Governor evaluates it against `policies.json` — Policy `POL_03` requires human approval for transfers over $500
-4. The Governor issues a `BLOCK_AND_ESCALATE` decision
+2. The Advisor proposes a `TRANSFER_FUNDS` action with `amount: 1000`
+3. The Covernor evaluates it against `policies.json` — Policy `POL_03` requires human approval for transfers over $500
+4. The Covernor issues a `BLOCK_AND_ESCALATE` decision
 5. The task appears in the Approval Console with status `AWAITING_HUMAN`
 
 **In the browser (http://localhost:5173):**
 1. Click the pending task in the left panel
-2. Review the Minister's proposal payload and the Governor's rejection reason
+2. Review the Advisor's proposal payload and the Covernor's rejection reason
 3. Click **Approve Override**
 4. A cryptographic capability token is minted and the task completes
 
@@ -296,7 +296,7 @@ This script:
 
 ## Customizing Policies
 
-Governor policies are defined in `src/config/policies.json`. Each policy has:
+Covernor policies are defined in `src/config/policies.json`. Each policy has:
 
 | Field | Description |
 |---|---|
@@ -345,7 +345,7 @@ covernor-platform/
 ├── src/
 │   ├── api/                    # Express routes, controllers, auth middleware
 │   ├── config/
-│   │   └── policies.json       # Governor policy rules (edit this!)
+│   │   └── policies.json       # Covernor policy rules (edit this!)
 │   ├── core/
 │   │   ├── minister/           # LLM planner
 │   │   │   ├── providers/      # OpenAI, Anthropic, Ollama adapters
@@ -421,10 +421,10 @@ ps aux | grep node
 
 ### LLM calls fail but the system still works
 
-This is by design. When the LLM call fails (bad key, network timeout, model not found), the Minister falls back to a mock strategy. The full pipeline keeps running. Check the backend logs for a warning like:
+This is by design. When the LLM call fails (bad key, network timeout, model not found), the Advisor falls back to a mock strategy. The full pipeline keeps running. Check the backend logs for a warning like:
 
 ```
-[Minister] LLM call failed, falling back to mock strategy.
+[Advisor] LLM call failed, falling back to mock strategy.
 ```
 
 To fix: verify your API key or local LLM server is working via the "Test Connection" button in the LLM Settings UI.

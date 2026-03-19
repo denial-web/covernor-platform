@@ -12,7 +12,7 @@ In Covernor, the LLM is merely an advisor — every action requires deterministi
 
 ```
                 ┌──────────────┐
-  Objective ───►│   Minister   │  LLM advisor (GPT-4o / Claude)
+  Objective ───►│   Advisor    │  LLM advisor (GPT-4o / Claude)
                 │  (Planner)   │  proposes ProposalJSON — zero execution rights
                 └──────┬───────┘
                        ▼
@@ -22,7 +22,7 @@ In Covernor, the LLM is merely an advisor — every action requires deterministi
                 └──────┬───────┘
                        ▼
                 ┌──────────────┐
-                │   Governor   │  Deterministic policy engine (no LLMs)
+                │  Covernor    │  Deterministic policy engine (no LLMs)
                 │  (Firewall)  │  APPROVE · APPROVE_WITH_CONSTRAINTS · BLOCK_AND_ESCALATE · REJECT_AND_REPLAN
                 └──────┬───────┘
                        ▼
@@ -75,7 +75,7 @@ Open **http://localhost:5173** to see the Covernor Approval Console.
 npm run demo-escalation
 ```
 
-This injects a high-risk "Transfer Funds" task that the Governor will `BLOCK_AND_ESCALATE`.
+This injects a high-risk "Transfer Funds" task that the Covernor will `BLOCK_AND_ESCALATE`.
 Open the Approval Console, inspect the rejection reason, and click **Approve Override** to watch a cryptographic capability token get minted.
 
 ### Configure an LLM (optional)
@@ -111,9 +111,9 @@ LLM_MODEL="my-model"
 │   ├── api/              # Express routes, controllers, middleware
 │   ├── config/           # policies.json, operator contracts
 │   ├── core/
-│   │   ├── minister/     # LLM planner + provider adapters (OpenAI, Anthropic)
-│   │   ├── critic/       # Zod schema-lock validation
-│   │   ├── governor/     # Deterministic policy engine
+│   │   ├── minister/     # Advisor: LLM planner + provider adapters (OpenAI, Anthropic)
+│   │   ├── critic/       # Critic: Zod schema-lock validation
+│   │   ├── governor/     # Covernor: Deterministic policy engine
 │   │   ├── operator/     # Sandboxed executor + tool implementations
 │   │   ├── workflow/     # BullMQ orchestration coordinator
 │   │   ├── policy/       # Capability registry + KMS token signer
@@ -133,12 +133,12 @@ LLM_MODEL="my-model"
 
 ### Policies
 
-`src/config/policies.json` defines deterministic Governor rules (spend limits, blocked operations, escalation thresholds).
+`src/config/policies.json` defines deterministic Covernor rules (spend limits, blocked operations, escalation thresholds).
 
 ### LLM Providers
 
 LLM keys can be configured via environment variables **or** through the Settings UI in the Approval Console (stored in the database as `SystemSettings`).
-When no valid key is available, the Minister falls back to a mock strategy so the pipeline keeps running.
+When no valid key is available, the Advisor falls back to a mock strategy so the pipeline keeps running.
 
 ### Capability Tokens
 
@@ -151,7 +151,7 @@ See `src/core/policy/capability.registry.ts` for how approved actions are bound 
 See **[docs/SETUP.md](./docs/SETUP.md)** for the complete installation and setup guide, including:
 - Step-by-step prerequisites for macOS, Linux, and Windows (WSL)
 - Connecting local LLMs (Ollama, LM Studio, vLLM)
-- Customizing Governor policies
+- Customizing Covernor policies
 - Troubleshooting common issues
 
 ---

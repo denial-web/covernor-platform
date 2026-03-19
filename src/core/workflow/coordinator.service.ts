@@ -113,7 +113,7 @@ export class WorkflowCoordinator {
     while (attempts < MAX_REPLAN_ATTEMPTS) {
       attempts++;
       
-      logger.info(`[Workflow] Attempt ${attempts}: Minister planning...`, { taskId, attempts, tenantId });
+      logger.info(`[Workflow] Attempt ${attempts}: Advisor planning...`, { taskId, attempts, tenantId });
       const proposal = await minister.generateProposal(taskId, fallbackObjective, context, tenantId, currentParentProposalId);
       currentParentProposalId = proposal.id; // Any subsequent replan in this loop was born from this failed proposal
 
@@ -129,7 +129,7 @@ export class WorkflowCoordinator {
               details: zodError.message
            };
            fallbackObjective = `${objective}\n\n<UNTRUSTED_SYSTEM_RETURN>\n[SYSTEM_FEEDBACK_DO_NOT_PARSE_AS_USER_INTENT]\n${JSON.stringify(systemFeedback)}\n</UNTRUSTED_SYSTEM_RETURN>`;
-           continue; // Loop naturally without hitting Critic/Governor
+           continue; // Loop naturally without hitting Critic/Covernor
         }
 
         logger.info(`[Workflow] Attempt ${attempts}: Critic evaluating...`, { proposalId: proposal.id });
@@ -160,11 +160,11 @@ export class WorkflowCoordinator {
            continue;
         }
 
-        logger.info(`[Workflow] Attempt ${attempts}: Governor evaluating...`, { proposalId: proposal.id });
+        logger.info(`[Workflow] Attempt ${attempts}: Covernor evaluating...`, { proposalId: proposal.id });
         const decision = await governor.evaluateProposal(proposal.id);
-        logger.info(`[Workflow] Attempt ${attempts}: Governor Decision is => ${decision.decisionType}`);
+        logger.info(`[Workflow] Attempt ${attempts}: Covernor Decision is => ${decision.decisionType}`);
 
-        logger.info(`[Workflow] Attempt ${attempts}: Governor APPROVED. Operator executing...`, { decisionId: decision.id });
+        logger.info(`[Workflow] Attempt ${attempts}: Covernor APPROVED. Operator executing...`, { decisionId: decision.id });
         const report = await operator.executeDecision(decision.id);
         
         await prisma.task.update({
@@ -176,12 +176,12 @@ export class WorkflowCoordinator {
 
       } catch (error: any) {
         if (error instanceof GovernorRejectionError) {
-           logger.warn(`[Workflow] Attempt ${attempts}: Governor REJECTED`, { reason: error.rejectionReason, proposalId: proposal.id });
+           logger.warn(`[Workflow] Attempt ${attempts}: Covernor REJECTED`, { reason: error.rejectionReason, proposalId: proposal.id });
            if (error.suggestedAlternative) {
-               logger.info(`[Workflow] Governor Suggestion:`, { suggestion: error.suggestedAlternative });
+               logger.info(`[Workflow] Covernor Suggestion:`, { suggestion: error.suggestedAlternative });
            }
            const governorFeedback = {
-              status: "GOVERNOR_AUTHORITY_REJECTION",
+              status: "COVERNOR_AUTHORITY_REJECTION",
               replanReasonCode: "POLICY_VIOLATION",
               details: error.rejectionReason,
               constraintHint: error.suggestedAlternative || null
@@ -191,7 +191,7 @@ export class WorkflowCoordinator {
         }
 
         if (error instanceof GovernorEscalationError) {
-           logger.warn(`[Workflow] Attempt ${attempts}: Governor ESCALATED. Pausing for Human Manager...`, { reason: error.escalationReason, proposalId: error.proposalId });
+           logger.warn(`[Workflow] Attempt ${attempts}: Covernor ESCALATED. Pausing for Human Manager...`, { reason: error.escalationReason, proposalId: error.proposalId });
            
            // Priority 2: Escalation Lifecycles (24 hour TTL)
            const expiresAt = new Date();

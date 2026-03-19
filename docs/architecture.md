@@ -8,18 +8,18 @@ Provide a high-assurance, cryptographically enforced governance framework for AI
 1. **Intake (Webhook & REST API)**
    Ingests objectives via Meta Webhooks or REST endpoints, managing deduplication (`x-idempotency-key`) and payload caching.
    
-2. **Minister (The Planner)**
+2. **Advisor (The Planner)**
    Unstructured LLM logic. Generates `ProposalJSON` strategies with fallback options based on the `Objective`. Has no direct means of execution.
 
 3. **Critic (The Internal Auditor)**
-   A secondary evaluator that checks the Minister's proposal against a strict Zod `SchemaLock` to detect injection attacks or structural deviations before passing it to the Governor.
+   A secondary evaluator that checks the Advisor's proposal against a strict Zod `SchemaLock` to detect injection attacks or structural deviations before passing it to the Covernor.
 
-4. **Governor (The Firewall)**
+4. **Covernor (The Firewall)**
    A deterministic, code-only policy engine that evaluates proposals against `policies.json`.
    Decisions:
    - `APPROVE`: Generates a single-use ECDSA-signed KMS capability token.
    - `APPROVE_WITH_CONSTRAINTS`: Injects hard bounds into the execution context.
-   - `REJECT_AND_REPLAN`: Demands a retry from the Minister.
+   - `REJECT_AND_REPLAN`: Demands a retry from the Advisor.
    - `BLOCK_AND_ESCALATE`: Routes to a human queue for `K-of-N` Dual Approval.
 
 5. **Operator (The Hands)**
@@ -30,19 +30,19 @@ Provide a high-assurance, cryptographically enforced governance framework for AI
 ```text
 User Task (REST or Webhook) -> BullMQ `workflow-orchestrator`
 ↓
-Minister generates proposal
+Advisor generates proposal
 ↓
 Critic evaluates payload schema
 ↓
-Governor validates constraints & capabilities
+Covernor validates constraints & capabilities
 ↓
-Governor outputs a Decision (e.g., APPROVE_WITH_CONSTRAINTS)
+Covernor outputs a Decision (e.g., APPROVE_WITH_CONSTRAINTS)
 ↓
 Operator consumes Decision and KMS signature, executes plan
 ↓
 Execution Record committed to Database
 ↓
-Minister may replan if required or Workflow completes
+Advisor may replan if required or Workflow completes
 ```
 
 ## Core Subsystems
@@ -51,7 +51,7 @@ Minister may replan if required or Workflow completes
 Separates LLM-proposed `actionTypes` from physical capabilities. A proposed action must map to an explicitly allowed capability to proceed.
 
 **Cryptographic Audit & KMS**
-Every execution requires a one-time ECDSA token signed by the Governor. Actions are chained together in an tamper-evident `AuditLog` hash chain.
+Every execution requires a one-time ECDSA token signed by the Covernor. Actions are chained together in an tamper-evident `AuditLog` hash chain.
 
 **Financial Dual Approval & Replay Protection**
 High-risk tasks require asynchronous `K-of-N` approvals in the `approval-console` UI. Operator parameters contain deterministic idempotency keys.

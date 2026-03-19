@@ -28,7 +28,7 @@ jest.mock('ioredis', () => {
 import { CriticService } from '../../src/core/critic/critic.service';
 import { SchemaValidator } from '../../src/core/policy/schema.validator';
 
-describe('Full System Integration: Intake -> Minister -> Governor -> Operator', () => {
+describe('Full System Integration: Intake -> Advisor -> Covernor -> Operator', () => {
   let coordinator: WorkflowCoordinator;
 
   beforeAll(async () => {
@@ -70,7 +70,7 @@ describe('Full System Integration: Intake -> Minister -> Governor -> Operator', 
       createdAt: new Date()
     } as any);
 
-    // Mock Proposal creation within Minister
+    // Mock Proposal creation within Advisor
     prismaMock.proposal.create.mockResolvedValue({
       id: propId,
       taskId: taskId,
@@ -85,7 +85,7 @@ describe('Full System Integration: Intake -> Minister -> Governor -> Operator', 
       createdAt: new Date()
     } as any);
 
-    // DB Proposal retrieval for Governor
+    // DB Proposal retrieval for Covernor
     prismaMock.proposal.findUnique.mockResolvedValue({
        id: propId,
        recommendedOption: {
@@ -127,7 +127,7 @@ describe('Full System Integration: Intake -> Minister -> Governor -> Operator', 
         expect.objectContaining({ where: { id: taskId } })
     );
 
-    // Expect Governor to log an approval decision
+    // Expect Covernor to log an approval decision
     expect(prismaMock.decision.create).toHaveBeenCalledWith(
          expect.objectContaining({
             data: expect.objectContaining({ decisionType: 'APPROVE_WITH_CONSTRAINTS' })
@@ -142,10 +142,10 @@ describe('Full System Integration: Intake -> Minister -> Governor -> Operator', 
     prismaMock.task.create.mockResolvedValueOnce({ id: taskId } as any);
     prismaMock.auditLog.create.mockResolvedValue({ id: 'log-1' } as any);
 
-    // Mock Governor to forcefully reject and trigger replans
+    // Mock Covernor to forcefully reject and trigger replans
     jest.spyOn(GovernorService.prototype, 'evaluateProposal').mockRejectedValue(new GovernorRejectionError('Mock rejection', 'Suggestion'));
 
-    // The Minister keeps stubbornly suggesting a bad command
+    // The Advisor keeps stubbornly suggesting a bad command
     jest.spyOn(MinisterService.prototype, 'generateProposal').mockResolvedValue({
       id: propId,
       taskId: taskId,

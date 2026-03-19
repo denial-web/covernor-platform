@@ -377,7 +377,7 @@ function App() {
                  <div className="space-y-6">
                     <div>
                         <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
-                           <FileJson className="w-4 h-4" /> Minister Proposal Payload
+                           <FileJson className="w-4 h-4" /> Advisor Proposal Payload
                         </h4>
                         <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-sm overflow-x-auto text-emerald-400 shadow-inner">
                             <pre>{JSON.stringify(selectedDecision.proposal.recommendedOption, null, 2)}</pre>

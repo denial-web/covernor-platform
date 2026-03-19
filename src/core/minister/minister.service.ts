@@ -5,7 +5,7 @@ import { logger } from '../../utils/logger';
 
 export class MinisterService {
   /**
-   * Minister interprets an objective and generates a proposal with recommended and fallback options.
+   * Advisor interprets an objective and generates a proposal with recommended and fallback options.
    * In a real implementation, this would involve LLM calls or complex planning engines.
    */
   async generateProposal(taskId: string, objective: string, context: any, tenantId: string = 'default_tenant', parentProposalId?: string) {
@@ -18,7 +18,7 @@ export class MinisterService {
        recommendedOption = aiResponse.recommendedOption;
        fallbackOptions = aiResponse.fallbackOptions;
     } catch (llmError: any) {
-       logger.warn("[Minister] LLM call failed, falling back to mock strategy.", { error: llmError.message });
+       logger.warn("[Advisor] LLM call failed, falling back to mock strategy.", { error: llmError.message });
        if (context && context.source === 'DEMO_ESCALATE') {
          recommendedOption = { actionType: "TRANSFER_FUNDS", parameters: { amount: 1000, recipient: "user_4492" }, riskEstimate: "HIGH" };
          fallbackOptions = [];
@@ -44,7 +44,7 @@ export class MinisterService {
       tenantId,
       proposalId: proposal.id,
       actionDetails: {
-        actor: 'Minister',
+        actor: 'Advisor',
         action: 'generate_proposal',
         objective,
         context

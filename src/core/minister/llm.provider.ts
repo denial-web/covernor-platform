@@ -70,7 +70,7 @@ export class LLMProvider {
    * Calls the configured LLM to generate a structured action proposal based on the objective.
    */
   async generateStrategy(objective: string, context: any, tenantId: string = 'default_tenant') {
-    const systemPrompt = `You are the Minister in a secure AI-driven governance platform.
+    const systemPrompt = `You are the Advisor in a secure AI-driven governance platform.
 Your role: Plan strategy, interpret objectives, and propose actionable technical plans.
 You cannot execute anything directly. You only propose.
 

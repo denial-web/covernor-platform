@@ -8,8 +8,8 @@ export interface CapabilityDefinition {
 
 /**
  * A static, deterministic registry of all high-level capabilities the system supports.
- * The Governor uses this to authorize actions, rather than authorizing raw tool executions. 
- * This prevents the Minister from directly calling side-effecting tools without going through an authorized Capability layer.
+* The Covernor uses this to authorize actions, rather than authorizing raw tool executions.
+   * This prevents the Advisor from directly calling side-effecting tools without going through an authorized Capability layer.
  */
 export const CAPABILITY_REGISTRY: Record<string, CapabilityDefinition> = {
     'database.read': {

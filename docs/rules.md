@@ -1,13 +1,13 @@
 # Project Rules
 
-1. **Minister** is the planner.
-2. **Critic** is the internal auditor, validating schemas and sanity checking the Minister.
-3. **Governor** is the absolute authority and policy firewall. 
+1. **Advisor** is the planner.
+2. **Critic** is the internal auditor, validating schemas and sanity checking the Advisor.
+3. **Covernor** is the absolute authority and policy firewall. 
 4. **Operator** is the strictly-bound executor.
 
 Never merge these responsibilities. 
 
-All decisions must pass through the Governor. 
+All decisions must pass through the Covernor. 
 The Operator must never execute unapproved actions or actions without a cryptographically signed Approval Token.
 
 ## Operational Constraints

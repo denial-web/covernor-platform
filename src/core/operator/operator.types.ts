@@ -36,7 +36,7 @@ export interface OperatorContract {
 
     /**
      * Zod schema defining the exact allowed arguments for this specific tool.
-     * Enforced by the Governor before approval.
+     * Enforced by the Covernor before approval.
      */
     allowedParameterSchema?: ZodTypeAny;
 }

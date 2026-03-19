@@ -62,11 +62,11 @@ model Decision {
   decisionType        String // APPROVE, APPROVE_WITH_CONSTRAINTS, REJECT_AND_REPLAN, BLOCK_AND_ESCALATE, HUMAN_OVERRIDE, PENDING_SECOND_APPROVAL
   riskLevel           String // LOW, MEDIUM, HIGH, CRITICAL
   policyResults       Json // Results of individual policy evaluations
-  constraints         Json? // Conditions injected by Governor
+  constraints         Json? // Conditions injected by Covernor
   requiredApprovers   Int               @default(1) // V2 Financial Dual Approval
   approvalsCount      Int               @default(0) // V2 Financial Dual Approval
   approverIdentities  String?           // Comma-separated list of Admin IDs to prevent self-dealing
-  approvedPayloadHash String? // Cryptographic SHA-256 hash of the payload approved by the Governor
+  approvedPayloadHash String? // Cryptographic SHA-256 hash of the payload approved by the Covernor
   executionRecord     ExecutionRecord?
   createdAt           DateTime          @default(now())
 
@@ -105,7 +105,7 @@ model AuditLog {
   timestamp             DateTime @default(now())
   proposalId            String? // Nullable if global
   decisionId            String?
-  actionDetails         Json     // Exhaustive snapshot of the action (e.g., policy results, execution outcome, governor stringency)
+  actionDetails         Json     // Exhaustive snapshot of the action (e.g., policy results, execution outcome, covernor stringency)
   
   // V2 Financial: Explicit Ledger Fields for fast querying
   amount                Float?

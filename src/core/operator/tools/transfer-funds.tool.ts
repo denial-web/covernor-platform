@@ -43,7 +43,7 @@ export class TransferFundsOperator implements BaseToolAdapter {
     // V2 Financial: Execution-Time Live Authorization Recheck
     // ------------------------------------------------------------------
     // Mocking an internal API call indicating if the user got banned 
-    // *between* the time the Governor approved this and now.
+    // *between* the time the Covernor approved this and now.
     const isAccountLocked = false; 
 
     if (isAccountLocked) {
