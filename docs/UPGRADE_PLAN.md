@@ -1,4 +1,4 @@
-# Minister-Governor Platform — Upgrade Plan
+# Covernor Platform — Upgrade Plan
 
 ## Status: NOT STARTED
 

@@ -1,6 +1,6 @@
-# 🏛️ Minister-Governor Platform: Architectural Review Guide
+# Covernor Platform: Architectural Review Guide
 
-This document is designed to provide a comprehensive, deeply technical overview of the **Minister-Governor Agentic SaaS Platform**. 
+This document is designed to provide a comprehensive, deeply technical overview of the **Covernor Agentic SaaS Platform**. 
 
 Please review this architecture for security, scalability, LLM reliability, and overall system design.
 

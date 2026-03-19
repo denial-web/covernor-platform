@@ -1,4 +1,4 @@
-# Minister–Governor Platform Architecture (v3.0)
+# Covernor Platform Architecture (v3.0)
 
 ## Purpose
 Provide a high-assurance, cryptographically enforced governance framework for AI agents where planning, safety testing, policy enforcement, and execution are strictly separated.

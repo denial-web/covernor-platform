@@ -1,6 +1,6 @@
 # Installation & Setup Guide
 
-This guide walks you through installing and running the Minister-Governor Platform from scratch on **macOS**, **Linux**, or **Windows (WSL)**.
+This guide walks you through installing and running the Covernor Platform from scratch on **macOS**, **Linux**, or **Windows (WSL)**.
 
 ---
 
@@ -80,8 +80,8 @@ redis-cli ping
 ### Quick setup (recommended)
 
 ```bash
-git clone https://github.com/denial-web/minister-governor-platform.git
-cd minister-governor-platform
+git clone https://github.com/denial-web/covernor-platform.git
+cd covernor-platform
 npm run setup
 ```
 
@@ -97,8 +97,8 @@ This single command:
 
 ```bash
 # 1. Clone
-git clone https://github.com/denial-web/minister-governor-platform.git
-cd minister-governor-platform
+git clone https://github.com/denial-web/covernor-platform.git
+cd covernor-platform
 
 # 2. Environment
 cp .env.example .env
@@ -159,7 +159,7 @@ This launches both servers in a single terminal:
 - **Backend** (Express + BullMQ workers) on `http://localhost:3000`
 - **Frontend** (React + Vite) on `http://localhost:5173`
 
-Open **http://localhost:5173** in your browser to see the Governor Approval Console.
+Open **http://localhost:5173** in your browser to see the Covernor Approval Console.
 
 ### Start servers separately (if you prefer two terminals)
 
@@ -339,7 +339,7 @@ Restart the backend (`npm run dev`) and all transfers over $100 will now require
 ## Project Layout
 
 ```
-minister-governor-platform/
+covernor-platform/
 ├── scripts/
 │   └── setup.sh               # Automated setup script
 ├── src/

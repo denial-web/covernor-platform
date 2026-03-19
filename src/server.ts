@@ -52,7 +52,7 @@ if (require.main === module) {
     let auditSnapshotWorker: AuditSnapshotWorker;
 
     const server = app.listen(PORT, () => {
-      logger.info(`Minister-Governor Platform running on http://localhost:${PORT}`);
+      logger.info(`Covernor Platform running on http://localhost:${PORT}`);
 
       reconciliationWorker = new ExecutionReconciliationWorker();
       reconciliationWorker.start();

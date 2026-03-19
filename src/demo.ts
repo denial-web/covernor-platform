@@ -27,7 +27,7 @@ async function waitForTaskCompletion(taskId: string): Promise<any> {
 
 async function runDemo() {
   console.log(chalk.bold.blue('======================================================'));
-  console.log(chalk.bold.blue('      Minister-Governor Platform : P0 Launch Demo     '));
+  console.log(chalk.bold.blue('      Covernor Platform : P0 Launch Demo     '));
   console.log(chalk.bold.blue('======================================================\n'));
   console.log(chalk.yellow('Note: BullMQ implementation requires a local Redis instance running on port 6379.\n'));
 

@@ -1,4 +1,4 @@
-# 🛡️ Minister-Governor Platform: Enterprise Hardening Roadmap
+# Covernor Platform: Enterprise Hardening Roadmap
 
 *Synthesized from internal architectural design and external LLM architectural reviews (Claude & ChatGPT).*
 

@@ -1,10 +1,10 @@
-# Minister-Governor Platform
+# Covernor Platform
 
 **A Governed AI Execution Engine for Enterprise Safety.**
 
-Minister-Governor is a strict, safety-first AI orchestration engine designed to solve the "rogue AI" problem.
+Covernor is a strict, safety-first AI orchestration engine designed to solve the "rogue AI" problem.
 In traditional frameworks, the LLM is both the brain and the hands.
-In Minister-Governor, the LLM is merely an advisor — every action requires deterministic policy approval and cryptographic authorization before it can execute.
+In Covernor, the LLM is merely an advisor — every action requires deterministic policy approval and cryptographic authorization before it can execute.
 
 ---
 
@@ -32,7 +32,7 @@ In Minister-Governor, the LLM is merely an advisor — every action requires det
                 └──────────────┘
 ```
 
-| Feature | Minister-Governor | LangChain / LlamaIndex | CrewAI / AutoGen |
+| Feature | Covernor | LangChain / LlamaIndex | CrewAI / AutoGen |
 | :--- | :--- | :--- | :--- |
 | **Execution Safety** | Deterministic Firewall & KMS Tokens | Up to the LLM | Up to the LLM |
 | **AI Component** | Swappable / Advisory Only | Graph / Chain based | Swarm intelligence |
@@ -52,8 +52,8 @@ In Minister-Governor, the LLM is merely an advisor — every action requires det
 ### One-command setup
 
 ```bash
-git clone https://github.com/denial-web/minister-governor-platform.git
-cd minister-governor-platform
+git clone https://github.com/denial-web/covernor-platform.git
+cd covernor-platform
 npm run setup
 ```
 
@@ -67,7 +67,7 @@ npm run dev
 
 This starts both the **backend** (Express + BullMQ, port 3000) and **frontend** (React + Vite, port 5173) in a single terminal.
 
-Open **http://localhost:5173** to see the Governor Approval Console.
+Open **http://localhost:5173** to see the Covernor Approval Console.
 
 ### Try the demo
 

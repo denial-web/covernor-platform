@@ -1,6 +1,6 @@
-# The 7 Stable Interfaces of the Minister-Governor System
+# The 7 Stable Interfaces of the Covernor System
 
-Most AI agent systems collapse because they lack rigid boundaries. A stable Minister-Governor architecture enforces these boundaries through strict, strongly-typed objects. If these schemas are validated at runtime, the system cannot drift into unsafe autonomous execution.
+Most AI agent systems collapse because they lack rigid boundaries. A stable Covernor architecture enforces these boundaries through strict, strongly-typed objects. If these schemas are validated at runtime, the system cannot drift into unsafe autonomous execution.
 
 ## 1. The Intake Interface (User -> Minister)
 Purpose: Defines exactly what the Minister is allowed to know about the objective. Prevention of reading unrelated system state.

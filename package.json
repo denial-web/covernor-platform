@@ -1,7 +1,7 @@
 {
-  "name": "minister-governor-platform",
+  "name": "covernor-platform",
   "version": "1.0.0",
-  "description": "Project root for Minister–Governor platform.",
+  "description": "Covernor Platform — A governed AI execution engine for enterprise safety.",
   "main": "index.js",
   "scripts": {
     "setup": "bash scripts/setup.sh",
@@ -27,11 +27,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/denial-web/minister-governor-platform.git"
+    "url": "https://github.com/denial-web/covernor-platform.git"
   },
-  "homepage": "https://github.com/denial-web/minister-governor-platform#readme",
+  "homepage": "https://github.com/denial-web/covernor-platform#readme",
   "bugs": {
-    "url": "https://github.com/denial-web/minister-governor-platform/issues"
+    "url": "https://github.com/denial-web/covernor-platform/issues"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.79.0",

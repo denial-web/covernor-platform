@@ -179,7 +179,7 @@ function App() {
         <div>
           <div className="flex items-center gap-3 mb-2">
              <ShieldAlert className="w-8 h-8 text-indigo-500" />
-             <h1 className="text-3xl font-bold tracking-tight text-white">Governor Approval Console</h1>
+             <h1 className="text-3xl font-bold tracking-tight text-white">Covernor Approval Console</h1>
           </div>
           <p className="text-slate-400">Review and orchestrate pending AWAITING_HUMAN escalated tasks.</p>
         </div>
@@ -386,7 +386,7 @@ function App() {
 
                     <div>
                         <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
-                           <XCircle className="w-4 h-4 text-rose-500" /> Governor Rejection Context
+                           <XCircle className="w-4 h-4 text-rose-500" /> Covernor Rejection Context
                         </h4>
                         <div className="space-y-2">
                             {Object.values(selectedDecision.policyResults || {}).map((pol: any, idx: number) => (

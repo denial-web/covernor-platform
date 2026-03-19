@@ -1,4 +1,4 @@
-You are building the Minister–Governor Platform.
+You are building the Covernor Platform.
 
 This system separates planning, governance, and execution into four strict roles:
 

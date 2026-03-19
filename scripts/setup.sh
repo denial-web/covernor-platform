@@ -2,7 +2,7 @@
 set -e
 
 echo "================================================"
-echo "  Minister-Governor Platform — Setup"
+echo "  Covernor Platform — Setup"
 echo "================================================"
 echo ""
 
