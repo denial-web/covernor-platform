@@ -1,0 +1,172 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+// ==========================================
+// ARCHITECTURE NOTES on Database Design
+// ==========================================
+// 1. ENUMS: We use `String` fields instead of Prisma `enum`s for statuses
+//    because SQLite (used for development and edge environments) has weak
+//    support for native enums. The fields are validated at the application 
+//    layer using Zod.
+// 2. CASCADING: We intentionally DO NOT use cascading deletions 
+//    (e.g., `onDelete: Cascade`). This is an audit-critical system, and 
+//    orphaning records safely preserves the forensic trail. Hard deletes 
+//    are discouraged; a parent deletion should fail if children exist.
+// ==========================================
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Task {
+  id             String     @id @default(uuid())
+  tenantId       String     @default("default_tenant") // Multi-tenant SaaS isolation
+  idempotencyKey String? // Prevents duplicate execution of the same webhook payload
+  objective      String
+  status         String // PENDING, PROCESSING, AWAITING_HUMAN, APPROVED, REJECTED, COMPLETED, FAILED, EXPIRED
+  expiresAt      DateTime? // Escalation timeout lifecycle
+  version        Int        @default(1) // Optimistic locking
+  proposals      Proposal[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@unique([tenantId, idempotencyKey]) // Strict Idempotency guard per tenant
+  @@index([tenantId, status])
+  @@index([expiresAt])
+}
+
+model Proposal {
+  id                String     @id @default(uuid())
+  tenantId          String     @default("default_tenant")
+  taskId            String
+  task              Task       @relation(fields: [taskId], references: [id])
+  parentProposalId  String? // Lineage tracking for retries
+  recommendedOption Json // Details of the strategy
+  fallbackOptions   Json // Alternative strategies (stored as JSON array)
+  contextSignals    Json // Environment context
+  status            String // PENDING, APPROVED, REJECTED
+  decisions         Decision[]
+  createdAt         DateTime   @default(now())
+
+  @@index([tenantId, taskId])
+  @@index([status])
+}
+
+model Decision {
+  id                  String            @id @default(uuid())
+  tenantId            String            @default("default_tenant")
+  proposalId          String
+  proposal            Proposal          @relation(fields: [proposalId], references: [id])
+  decisionType        String // APPROVE, APPROVE_WITH_CONSTRAINTS, REJECT_AND_REPLAN, BLOCK_AND_ESCALATE, HUMAN_OVERRIDE, PENDING_SECOND_APPROVAL
+  riskLevel           String // LOW, MEDIUM, HIGH, CRITICAL
+  policyResults       Json // Results of individual policy evaluations
+  constraints         Json? // Conditions injected by Governor
+  requiredApprovers   Int               @default(1) // V2 Financial Dual Approval
+  approvalsCount      Int               @default(0) // V2 Financial Dual Approval
+  approverIdentities  String?           // Comma-separated list of Admin IDs to prevent self-dealing
+  approvedPayloadHash String? // Cryptographic SHA-256 hash of the payload approved by the Governor
+  executionRecord     ExecutionRecord?
+  createdAt           DateTime          @default(now())
+
+  @@index([tenantId, proposalId])
+}
+
+model ExecutionRecord {
+  id                String    @id @default(uuid())
+  decisionId        String    @unique
+  decision          Decision  @relation(fields: [decisionId], references: [id])
+  tenantId          String    @default("default_tenant")
+  taskId            String
+  idempotencyKey          String
+  providerTransactionId   String?   // External transaction reference
+  providerIdempotencyKey  String?   // Sent to external provider
+  status                  String    // PENDING, EXECUTING, COMPLETED, FAILED, UNKNOWN, RECONCILIATION_REQUIRED
+  errorClassification     String?   // FATAL, RETRYABLE, UNKNOWN
+  rollbackData            Json?     // State snapshot for P1.6 rollback execution
+  attemptCount      Int       @default(0)
+  lastError         String?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  reconciledAt      DateTime?
+  reconciliationAttempts Int @default(0) // V2.1 Bounded state machine
+  updatedAt         DateTime  @updatedAt
+  createdAt         DateTime  @default(now())
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, status])
+  @@index([providerTransactionId])
+}
+
+model AuditLog {
+  id                    String   @id @default(uuid())
+  tenantId              String   @default("default_tenant")
+  timestamp             DateTime @default(now())
+  proposalId            String? // Nullable if global
+  decisionId            String?
+  actionDetails         Json     // Exhaustive snapshot of the action (e.g., policy results, execution outcome, governor stringency)
+  
+  // V2 Financial: Explicit Ledger Fields for fast querying
+  amount                Float?
+  currency              String?  @default("USD")
+  recipientAccount      String?
+  providerTransactionId String?
+  policyVersion         String?  @default("v1.2")
+  approverIdentities    String?  // Array of user IDs stored as CSV or JSON string
+  reconciliationStatus  String?  // PENDING, RECONCILED, DISCREPANCY
+  
+  previousHash          String? // Hash-Chaining: Links to the previous AuditLog to detect tampering
+  currentHash           String  // Cryptographic hash of this log + previousHash
+
+  @@index([tenantId, timestamp])
+  @@index([proposalId])
+  @@index([decisionId])
+}
+
+model ApprovalToken {
+  nonce        String    @id
+  decisionId   String
+  tenantId     String
+  taskId       String
+  proposalId   String
+  payloadHash  String
+  signature    String
+  used         Boolean   @default(false)
+  usedAt       DateTime?
+  expiresAt    DateTime
+  policyVersionHash String? // V2.1 Policy Governance Tracking
+  createdAt    DateTime  @default(now())
+
+  @@index([tenantId, decisionId])
+  @@index([expiresAt])
+}
+
+// ----------------------------------------------------------------------
+// V2.1 Policy Version Registry
+// ----------------------------------------------------------------------
+model GovernorPolicy {
+  id          String   @id @default(uuid())
+  versionHash String   @unique // SHA-256 hash of the ruleset to prove exactly what executed
+  rules       Json     // The actual Array of policies
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([isActive])
+}
+
+// ----------------------------------------------------------------------
+// V4 Multi-Provider Settings Map
+// ----------------------------------------------------------------------
+model SystemSettings {
+  id        String   @id @default(uuid())
+  tenantId  String?  // Nullable for global platform settings
+  category  String   @default("llm_providers")
+  key       String   // e.g. "active_provider", "openai_key", "anthropic_key"
+  value     String   // Encrypted or raw string value
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([tenantId, category, key])
+  @@index([tenantId, category])
+}

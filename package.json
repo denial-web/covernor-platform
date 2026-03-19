@@ -1,0 +1,70 @@
+{
+  "name": "minister-governor-platform",
+  "version": "1.0.0",
+  "description": "Project root for Minister–Governor platform.",
+  "main": "index.js",
+  "scripts": {
+    "setup": "bash scripts/setup.sh",
+    "dev": "npx concurrently -n backend,frontend -c blue,magenta \"npm run start:dev\" \"npm run start:frontend\"",
+    "start:dev": "nodemon src/server.ts",
+    "start:frontend": "cd approval-console && npm run dev",
+    "postinstall": "cd approval-console && npm install",
+    "test": "jest",
+    "demo": "ts-node src/demo.ts",
+    "demo-escalation": "ts-node src/scripts/demo-escalation.ts",
+    "invoke-webhook": "ts-node src/scripts/invoke-webhook.ts"
+  },
+  "keywords": [
+    "ai-safety",
+    "governance",
+    "llm-orchestration",
+    "policy-engine",
+    "human-in-the-loop",
+    "bullmq",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/denial-web/minister-governor-platform.git"
+  },
+  "homepage": "https://github.com/denial-web/minister-governor-platform#readme",
+  "bugs": {
+    "url": "https://github.com/denial-web/minister-governor-platform/issues"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.79.0",
+    "@libsql/client": "^0.17.0",
+    "@prisma/adapter-libsql": "^7.5.0",
+    "@prisma/client": "^7.5.0",
+    "axios": "^1.13.6",
+    "bullmq": "^5.71.0",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "ioredis": "^5.10.0",
+    "openai": "^6.31.0",
+    "pg": "^8.20.0",
+    "uuid": "^9.0.1",
+    "winston": "^3.19.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.5.0",
+    "@types/pg": "^8.18.0",
+    "@types/supertest": "^7.2.0",
+    "@types/uuid": "^10.0.0",
+    "chalk": "^4.1.2",
+    "concurrently": "^9.2.1",
+    "jest": "^30.3.0",
+    "jest-mock-extended": "^4.0.0",
+    "nodemon": "^3.1.14",
+    "prisma": "^7.5.0",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.6",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

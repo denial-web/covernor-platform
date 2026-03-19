@@ -1,0 +1,40 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Env / secrets
+.env
+.env.local
+*.pem
+
+# Dependencies
+node_modules/
+__pycache__/
+.venv/
+venv/
+*.egg-info/
+
+# Build / output
+dist/
+build/
+*.log
+
+# Prisma generated client
+/generated/prisma
+
+# Database files (dev artifacts — never commit real data)
+*.db
+*.db-journal
+
+# Runtime sandbox data
+sandbox/
+
+# IDE / editor
+.cursor/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Test coverage
+coverage/

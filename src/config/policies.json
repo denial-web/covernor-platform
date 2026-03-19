@@ -1,0 +1,83 @@
+{
+  "policies": [
+    {
+      "id": "POL_01_NO_DELETE",
+      "name": "Destructive Action Prevention",
+      "description": "Prevents any actions that delete or destroy records. Currently bounds PostgreSQL Queries.",
+      "targetActionTypes": ["POSTGRESQL_QUERY"],
+      "ruleType": "DENY",
+      "conditions": {
+        "parameter": "query",
+        "operator": "CONTAINS",
+        "value": ["DELETE", "DROP", "TRUNCATE", "ALTER"]
+      },
+      "riskLevel": "CRITICAL"
+    },
+    {
+      "id": "POL_02_MAX_READ_LIMIT",
+      "name": "Data Exfiltration Limit",
+      "description": "Restricts any read operation to a maximum of 50 records to prevent mass data exfiltration.",
+      "targetActionTypes": ["ZENDESK_OPERATOR", "POSTGRESQL_QUERY", "READ_DATABASE"],
+      "ruleType": "CONSTRAINT",
+      "constraintInjection": {
+        "maxRecords": 50
+      },
+      "riskLevel": "MEDIUM"
+    },
+    {
+      "id": "POL_03_REQUIRE_HUMAN_APPROVAL",
+      "name": "High Value Transactions",
+      "description": "Any financial transaction over $500 must be manually approved.",
+      "targetActionTypes": ["TRANSFER_FUNDS"],
+      "ruleType": "ESCALATE",
+      "conditions": {
+        "parameter": "amount",
+        "operator": "GREATER_THAN",
+        "value": 500
+      },
+      "riskLevel": "HIGH"
+    },
+    {
+      "id": "POL_04_PROVENANCE_REQUIRED",
+      "name": "Strict Provenance Enforcement",
+      "description": "Financial routing targets must have verified system provenance, avoiding raw user text.",
+      "targetActionTypes": ["TRANSFER_FUNDS"],
+      "ruleType": "DENY",
+      "conditions": {
+        "parameter": "recipient",
+        "operator": "UNTRUSTED_PROVENANCE",
+        "value": "SYSTEM_VERIFIED"
+      },
+      "riskLevel": "CRITICAL"
+    },
+    {
+      "id": "POL_05_DUAL_APPROVAL_EXTRA_HIGH",
+      "name": "Exceptional Value Transactions",
+      "description": "Any financial transaction over $10000 requires two independent human approvals.",
+      "targetActionTypes": ["TRANSFER_FUNDS"],
+      "ruleType": "DUAL_APPROVAL",
+      "conditions": {
+        "parameter": "amount",
+        "operator": "GREATER_THAN",
+        "value": 10000
+      },
+      "riskLevel": "CRITICAL"
+    },
+    {
+      "id": "POL_06_EXTERNAL_HTTP_OVERSIGHT",
+      "name": "External Request Tracking",
+      "description": "Any raw HTTP or Slack operator requests pass default unless blocked by Operator Contracts.",
+      "targetActionTypes": ["HTTP_REQUEST", "SLACK_OPERATOR"],
+      "ruleType": "CONSTRAINT",
+      "riskLevel": "LOW"
+    },
+    {
+      "id": "POL_07_FILESYSTEM_OVERSIGHT",
+      "name": "Local Sandbox Control",
+      "description": "Filesystem operator runs in constrained sandbox.",
+      "targetActionTypes": ["FILE_SYSTEM_OPERATOR"],
+      "ruleType": "CONSTRAINT",
+      "riskLevel": "LOW"
+    }
+  ]
+}
