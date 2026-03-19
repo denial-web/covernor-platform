@@ -12,10 +12,10 @@ import { workflowQueue } from '../core/workflow/coordinator.service';
 const coordinator = WorkflowCoordinator.getInstance();
 
 export const createTask = async (req: Request, res: Response) => {
+  const idempotencyKey = req.headers['x-idempotency-key'] as string || undefined;
   try {
     const { objective, context } = req.body;
     const tenantId = req.user!.tenantId;
-    const idempotencyKey = req.headers['x-idempotency-key'] as string || undefined;
 
     if (!objective) return res.status(400).json({ error: 'Objective required' });
     if (typeof objective !== 'string') return res.status(400).json({ error: 'Objective must be a string' });
@@ -45,6 +45,14 @@ export const createTask = async (req: Request, res: Response) => {
 
     res.status(201).json({ message: 'Task created and workflow started', task });
   } catch (error: any) {
+    if (error.code === 'P2002' && idempotencyKey) {
+      const existingTask = await prisma.task.findUnique({
+        where: { tenantId_idempotencyKey: { tenantId: req.user!.tenantId, idempotencyKey } }
+      });
+      if (existingTask) {
+        return res.status(200).json({ message: 'Task already executed (Idempotent replay)', task: existingTask });
+      }
+    }
     logger.error("Failed to create task", { error: error.message });
     res.status(500).json({ error: 'Internal Server Error' });
   }
@@ -195,6 +203,15 @@ export const overrideDecision = async (req: Request, res: Response) => {
     }
 
     logger.info(`[Human API] Overriding Decision ${decisionId} (${updatedApprovalsCount}/${decision.requiredApprovers} approvals). Handing directly to Operator...`);
+
+    // Atomically lock the original decision to prevent double-execution race
+    const lockResult = await prisma.decision.updateMany({
+        where: { id: decisionId, decisionType: 'BLOCK_AND_ESCALATE' },
+        data: { decisionType: 'OVERRIDE_IN_PROGRESS' }
+    });
+    if (lockResult.count === 0) {
+        return res.status(409).json({ error: 'Override already in progress by another approver. Please wait.' });
+    }
 
     // 2. Append-Only Overrides: Create a new Decision record instead of mutating the old one.
     const decisionIdToUse = uuidv4();

@@ -36,18 +36,22 @@ export class AuditSnapshotWorker {
         logger.info("[Audit Worker] Stopped.");
     }
 
-    private async getLastProcessedId(): Promise<string> {
+    private async getLastCursor(): Promise<{ timestamp: Date; id: string } | null> {
         try {
             await fs.promises.access(CURSOR_FILE);
             const cursorStr = await fs.promises.readFile(CURSOR_FILE, 'utf-8');
-            return cursorStr.trim() || '';
+            const parsed = JSON.parse(cursorStr.trim());
+            if (parsed.timestamp && parsed.id) {
+                return { timestamp: new Date(parsed.timestamp), id: parsed.id };
+            }
         } catch (error) {
-            return '';
+            // File doesn't exist or invalid JSON
         }
+        return null;
     }
 
-    private async updateCursor(lastId: string) {
-        await fs.promises.writeFile(CURSOR_FILE, lastId);
+    private async updateCursor(timestamp: Date, id: string) {
+        await fs.promises.writeFile(CURSOR_FILE, JSON.stringify({ timestamp: timestamp.toISOString(), id }));
     }
 
     private async runSweep() {
@@ -55,15 +59,20 @@ export class AuditSnapshotWorker {
         this.isRunning = true;
 
         try {
-            const lastProcessedId = await this.getLastProcessedId();
+            const cursor = await this.getLastCursor();
             
-            // Query new audit logs using id cursor (avoids timestamp-boundary record drops)
-            const whereClause = lastProcessedId ? { id: { gt: lastProcessedId } } : {};
+            // Keyset pagination: fetch records strictly after (timestamp, id) cursor
+            const whereClause = cursor
+                ? {
+                    OR: [
+                        { timestamp: { gt: cursor.timestamp } },
+                        { timestamp: cursor.timestamp, id: { gt: cursor.id } }
+                    ]
+                  }
+                : {};
             const logsToExport = await prisma.auditLog.findMany({
                 where: whereClause,
-                orderBy: {
-                    id: 'asc'
-                },
+                orderBy: [{ timestamp: 'asc' }, { id: 'asc' }],
                 take: 1000
             });
 
@@ -93,9 +102,8 @@ export class AuditSnapshotWorker {
                 logger.debug(`[Audit Worker] Wrote ${logs.length} logs to ${filePath}`);
             }
 
-            // Update cursor to the id of the last exported record
-            const lastExportedId = logsToExport[logsToExport.length - 1].id;
-            await this.updateCursor(lastExportedId);
+            const lastExported = logsToExport[logsToExport.length - 1];
+            await this.updateCursor(lastExported.timestamp, lastExported.id);
             
             logger.info(`[Audit Worker] Successfully snapshot exported ${logsToExport.length} immutable records.`);
             
