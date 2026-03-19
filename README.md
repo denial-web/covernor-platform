@@ -1,44 +1,82 @@
-# Covernor Platform
+# Covernor — AI Governance Layer
 
-**A Governed AI Execution Engine for Enterprise Safety.**
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6.svg)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-339933.svg)](https://nodejs.org/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 
-Covernor is a strict, safety-first AI orchestration engine designed to solve the "rogue AI" problem.
-In traditional frameworks, the LLM is both the brain and the hands.
-In Covernor, the LLM is merely an advisor — every action requires deterministic policy approval and cryptographic authorization before it can execute.
+**Control what AI is allowed to *do* — not just what it says.**
 
 ---
 
-## Architecture: The Quadripartite System
+## Why This Exists
+
+AI agents are unsafe without execution control. LangChain, CrewAI, and AutoGen let LLMs call tools directly — the AI is both the brain and the hands. One hallucinated function call can delete a database, transfer funds to the wrong account, or leak customer data.
+
+Covernor separates **planning** from **execution**. The AI proposes. A deterministic policy engine decides. Cryptographic tokens authorize. Humans approve what matters. Everything is audit-logged.
+
+---
+
+## How It Works
 
 ```
-                ┌──────────────┐
-  Objective ───►│   Advisor    │  LLM advisor (GPT-4o / Claude)
-                │  (Planner)   │  proposes ProposalJSON — zero execution rights
-                └──────┬───────┘
-                       ▼
-                ┌──────────────┐
-                │    Critic    │  Zod SchemaLock validation, prompt-injection defense
-                │  (Auditor)   │
-                └──────┬───────┘
-                       ▼
-                ┌──────────────┐
-                │  Covernor    │  Deterministic policy engine (no LLMs)
-                │  (Firewall)  │  APPROVE · APPROVE_WITH_CONSTRAINTS · BLOCK_AND_ESCALATE · REJECT_AND_REPLAN
-                └──────┬───────┘
-                       ▼
-                ┌──────────────┐
-                │   Operator   │  Sandboxed execution, KMS capability-token verification
-                │   (Hands)    │  OperatorContracts: maxRowsAffected, requiresIdempotency
-                └──────────────┘
+              ┌──────────────┐
+ Objective ──►│   Advisor    │  LLM (GPT-4o / Claude / Ollama / any)
+              │              │  Proposes actions — zero execution rights
+              └──────┬───────┘
+                     ▼
+              ┌──────────────┐
+              │    Critic    │  Blocks prompt injection, SQL injection,
+              │              │  data exfiltration before it reaches policy
+              └──────┬───────┘
+                     ▼
+              ┌──────────────┐
+              │  Covernor    │  Deterministic policy engine (no LLM)
+              │              │  APPROVE · CONSTRAIN · ESCALATE · REJECT
+              └──────┬───────┘
+                     ▼
+              ┌──────────────┐
+              │   Operator   │  Sandboxed execution with capability tokens
+              │              │  Single-use, TTL-bound, ECDSA-signed
+              └──────────────┘
 ```
 
-| Feature | Covernor | LangChain / LlamaIndex | CrewAI / AutoGen |
-| :--- | :--- | :--- | :--- |
-| **Execution Safety** | Deterministic Firewall & KMS Tokens | Up to the LLM | Up to the LLM |
-| **AI Component** | Swappable / Advisory Only | Graph / Chain based | Swarm intelligence |
-| **Failure Handling** | Suggest & Retry UX / Rollbacks | Try-Catch blocks | Agent Debate |
-| **Auditability** | Cryptographic hash-chain logs | Basic Logging | Basic Logging |
-| **Enterprise UX** | K-of-N Human Dual Approval UI | N/A | Variable |
+The LLM never touches the execution layer. The Covernor never uses an LLM. This separation is the core security guarantee.
+
+---
+
+## Core Features
+
+| Feature | What It Does |
+|---|---|
+| **Policy Engine (Default Deny)** | JSON-configurable rules. Unknown actions are blocked, not allowed. No LLM in the decision path. |
+| **Capability Tokens (ECDSA)** | Every approved action gets a single-use, TTL-bound, scope-bound cryptographic token. The Operator won't execute without one. |
+| **Dual Approval (K-of-N)** | High-risk actions require multiple human approvers. Anti-self-dealing — same person can't approve twice. |
+| **Hash-Chain Audit Log** | SHA-256 chained, append-only, tamper-evident. Every decision, approval, and execution is recorded with full context. |
+| **Velocity Limiting** | Per-tenant and per-recipient rate guards. Atomic Redis Lua scripts. Fails closed if Redis is down. |
+| **Critic Layer** | Deterministic pattern detection for SQL injection, prompt injection, data exfiltration, and sensitive data leakage. |
+| **Operator Contracts** | Each tool declares max execution time, max rows, rate limits, and required idempotency. Enforced at runtime. |
+| **RBAC** | JWT + DB-backed roles (admin, approver, viewer, operator). No self-declared privileges. |
+| **LLM Flexibility** | Swap providers via UI or env vars. Supports OpenAI, Anthropic, Ollama, LM Studio, vLLM, or any OpenAI-compatible API. Works without any LLM (mock mode). |
+
+---
+
+## Example: AI Refund System
+
+A bank deploys an AI assistant that can issue refunds:
+
+```
+Customer: "I was charged twice for order #4521"
+```
+
+| Amount | Covernor Decision | What Happens |
+|---|---|---|
+| $12 | `APPROVE` | Refund executes automatically. Audit logged. |
+| $250 | `APPROVE_WITH_CONSTRAINTS` | Refund executes with injected reason code. Manager notified. |
+| $5,000 | `BLOCK_AND_ESCALATE` | Blocked. Two managers must approve in the console. 4-hour expiry. |
+| $50,000 | `REJECT` | Hard reject. Velocity limit triggered. Flagged for review. |
+
+The AI never decides the outcome. The policy engine does.
 
 ---
 
@@ -47,60 +85,104 @@ In Covernor, the LLM is merely an advisor — every action requires deterministi
 ### Prerequisites
 
 - **Node.js** >= 18
-- **Redis** — local, Homebrew, or Docker (`docker run -d -p 6379:6379 redis`)
+- **Redis** — `brew services start redis` / `docker run -d -p 6379:6379 redis`
 
-### One-command setup
+### Setup & Run
 
 ```bash
 git clone https://github.com/denial-web/covernor-platform.git
 cd covernor-platform
-npm run setup
+npm run setup    # install deps, create .env, init database
+npm run dev      # starts backend (port 3000) + frontend (port 5173)
 ```
 
-This installs all dependencies (backend + frontend), creates your `.env` file, generates the Prisma client, pushes the database schema, and checks that Redis is reachable.
+Open **http://localhost:5173** → Covernor Approval Console.
 
-### Run
-
-```bash
-npm run dev
-```
-
-This starts both the **backend** (Express + BullMQ, port 3000) and **frontend** (React + Vite, port 5173) in a single terminal.
-
-Open **http://localhost:5173** to see the Covernor Approval Console.
-
-### Try the demo
+### Try the Demo
 
 ```bash
 npm run demo-escalation
 ```
 
-This injects a high-risk "Transfer Funds" task that the Covernor will `BLOCK_AND_ESCALATE`.
-Open the Approval Console, inspect the rejection reason, and click **Approve Override** to watch a cryptographic capability token get minted.
+Injects a high-risk "Transfer $15,000" task. Watch it get blocked, inspect the rejection reason in the console, and click **Approve Override** to see a capability token get minted.
 
-### Configure an LLM (optional)
+### Connect an LLM (Optional)
 
-The platform works out of the box with a **mock strategy** — no API keys needed.
-
-To connect a real LLM, either:
-
-1. **UI** — click "LLM Settings" in the Approval Console and pick your provider
-2. **`.env`** — set the relevant variables:
+Works out of the box with a mock strategy. To use a real LLM:
 
 ```bash
-# Cloud APIs
-ACTIVE_LLM_PROVIDER="openai"        # or "anthropic"
+# Cloud
+ACTIVE_LLM_PROVIDER="openai"      # or "anthropic"
 OPENAI_API_KEY="sk-..."
 
-# Local LLM (Ollama)
+# Local (Ollama)
 ACTIVE_LLM_PROVIDER="ollama"
-LLM_MODEL="llama3"                   # any model from `ollama list`
+LLM_MODEL="llama3"
 
-# Any OpenAI-compatible server (LM Studio, vLLM, LocalAI, etc.)
+# Any OpenAI-compatible server
 ACTIVE_LLM_PROVIDER="custom"
 LLM_BASE_URL="http://localhost:1234/v1"
 LLM_MODEL="my-model"
 ```
+
+Or configure via the **LLM Settings** panel in the Approval Console UI.
+
+---
+
+## Comparison
+
+| | Covernor | LangChain / LlamaIndex | CrewAI / AutoGen |
+|---|---|---|---|
+| **Execution Safety** | Deterministic firewall + crypto tokens | Up to the LLM | Up to the LLM |
+| **AI Role** | Advisory only, swappable | Core orchestrator | Swarm intelligence |
+| **Failure Handling** | Retry + rollback + human escalation | Try-catch | Agent debate |
+| **Audit Trail** | Cryptographic hash-chain | Basic logging | Basic logging |
+| **Human Oversight** | K-of-N dual approval UI | N/A | Variable |
+| **Vendor Lock-in** | None (self-hosted, open-source) | Framework-dependent | Framework-dependent |
+
+---
+
+## Production Readiness
+
+> **Honest status: This is a governance framework, not a turnkey product.**
+
+### What's real and working
+- Deterministic policy engine with default-deny
+- ECDSA capability tokens (single-use, TTL-bound)
+- Hash-chain audit logs with financial fields
+- K-of-N dual approval with anti-replay
+- Redis velocity limiting (fails closed)
+- JWT + RBAC authentication
+- SQL/prompt injection detection
+- Operator contract enforcement
+- 43 security fixes across 6 audit rounds
+
+### What's still development-stage
+- SQLite database (swap to PostgreSQL for production)
+- In-memory crypto keys (integrate real KMS/HSM for production)
+- Mock payment execution (integrate your payment gateway)
+- Minimal test suite (needs comprehensive coverage)
+- No TLS configuration (add via reverse proxy or config)
+
+### What you'd add for regulated industries
+- Enterprise identity (OIDC/SAML + MFA)
+- HSM-backed key management (AWS KMS, Vault)
+- Database encryption at rest
+- Third-party penetration testing
+- Compliance documentation (SOC 2, FedRAMP)
+
+See [docs/UPGRADE_PLAN.md](./docs/UPGRADE_PLAN.md) for the full production roadmap.
+
+---
+
+## Roadmap
+
+| Version | Focus | Status |
+|---|---|---|
+| **v0.1** | Core governance engine, policy engine, capability tokens, dual approval, audit chain | Current |
+| **v0.2** | PostgreSQL migration, OpenTelemetry, structured logging, API versioning | Planned |
+| **v0.3** | Enterprise identity (OIDC/SAML), KMS integration, field-level encryption | Planned |
+| **v0.4** | Agent memory, learning loops, fine-tuning pipeline, plugin system | Planned |
 
 ---
 
@@ -108,62 +190,46 @@ LLM_MODEL="my-model"
 
 ```
 ├── src/
-│   ├── api/              # Express routes, controllers, middleware
-│   ├── config/           # policies.json, operator contracts
+│   ├── api/              # Express routes, auth, rate limiting, RBAC
 │   ├── core/
-│   │   ├── minister/     # Advisor: LLM planner + provider adapters (OpenAI, Anthropic)
-│   │   ├── critic/       # Critic: Zod schema-lock validation
-│   │   ├── governor/     # Covernor: Deterministic policy engine
+│   │   ├── minister/     # Advisor: LLM planner + provider adapters
+│   │   ├── critic/       # Injection detection + schema validation
+│   │   ├── governor/     # Deterministic policy engine
 │   │   ├── operator/     # Sandboxed executor + tool implementations
 │   │   ├── workflow/     # BullMQ orchestration coordinator
-│   │   ├── policy/       # Capability registry + KMS token signer
-│   │   └── crypto/       # ECDSA signing, encryption, hash-chain audit
-│   ├── db/               # Prisma client, audit logger
-│   ├── scripts/          # Demo and utility scripts
-│   └── workers/          # Background reconciliation, escalation, audit workers
+│   │   ├── policy/       # Capability registry
+│   │   └── crypto/       # ECDSA signing, AES-256-GCM encryption
+│   ├── db/               # Prisma client, hash-chain audit logger
+│   └── workers/          # Reconciliation, escalation, audit snapshot
 ├── approval-console/     # React + Vite frontend
-├── docs/                 # Architecture, interfaces, design docs
-├── prisma/               # Schema and migrations
-└── sandbox/              # Runtime audit snapshots (gitignored)
+├── docs/                 # Architecture, setup guide, upgrade plan
+├── prisma/               # Database schema
+└── tests/                # Unit and integration tests
 ```
 
 ---
 
-## Configuration
+## Documentation
 
-### Policies
-
-`src/config/policies.json` defines deterministic Covernor rules (spend limits, blocked operations, escalation thresholds).
-
-### LLM Providers
-
-LLM keys can be configured via environment variables **or** through the Settings UI in the Approval Console (stored in the database as `SystemSettings`).
-When no valid key is available, the Advisor falls back to a mock strategy so the pipeline keeps running.
-
-### Capability Tokens
-
-See `src/core/policy/capability.registry.ts` for how approved actions are bound to single-use, ECDSA-signed, TTL-limited tokens that the Operator must verify before execution.
-
----
-
-## Full Setup Guide
-
-See **[docs/SETUP.md](./docs/SETUP.md)** for the complete installation and setup guide, including:
-- Step-by-step prerequisites for macOS, Linux, and Windows (WSL)
-- Connecting local LLMs (Ollama, LM Studio, vLLM)
-- Customizing Covernor policies
-- Troubleshooting common issues
+- **[Setup Guide](./docs/SETUP.md)** — Full installation for macOS, Linux, Windows (WSL)
+- **[Architecture](./docs/architecture.md)** — System design and data flow
+- **[Interfaces](./docs/interfaces.md)** — API contracts and schemas
+- **[Upgrade Plan](./docs/UPGRADE_PLAN.md)** — Production roadmap with effort estimates
 
 ---
 
 ## Contributing
 
-1. Fork the repo and create your branch from `main`
-2. Make your changes and ensure `npm test` passes
-3. Open a pull request
+We welcome contributions. See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for guidelines.
+
+The most impactful areas right now:
+- PostgreSQL adapter and migration scripts
+- Additional operator tools (Stripe, Twilio, AWS)
+- Test coverage (unit, integration, security)
+- Documentation and examples
 
 ---
 
 ## License
 
-[MIT](./LICENSE)
+[MIT](./LICENSE) — Use it, fork it, build on it.
