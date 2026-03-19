@@ -82,16 +82,19 @@ export class CriticService {
     }
 
     const allText = this.extractAllText(recOpt);
+    const isDatabaseAction = recOpt.actionType === 'POSTGRESQL_QUERY' || recOpt.actionType === 'MODIFY_DATABASE';
 
-    const sqlMatch = this.scanPatterns(allText, SQL_INJECTION_PATTERNS);
-    if (sqlMatch) {
-      logger.warn(`[Critic] SQL injection pattern detected in proposal ${proposal.id}`, { match: sqlMatch });
-      return {
-        isValid: false,
-        reasonCode: 'VIOLATES_SYSTEM_INSTRUCTIONS',
-        confidence: 0.92,
-        details: `SQL injection pattern detected: "${sqlMatch}"`,
-      };
+    if (!isDatabaseAction) {
+      const sqlMatch = this.scanPatterns(allText, SQL_INJECTION_PATTERNS);
+      if (sqlMatch) {
+        logger.warn(`[Critic] SQL injection pattern detected in proposal ${proposal.id}`, { match: sqlMatch });
+        return {
+          isValid: false,
+          reasonCode: 'VIOLATES_SYSTEM_INSTRUCTIONS',
+          confidence: 0.92,
+          details: `SQL injection pattern detected: "${sqlMatch}"`,
+        };
+      }
     }
 
     const promptMatch = this.scanPatterns(allText, PROMPT_INJECTION_PATTERNS);

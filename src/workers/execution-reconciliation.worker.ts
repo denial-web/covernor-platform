@@ -70,7 +70,7 @@ export class ExecutionReconciliationWorker {
             logger.warn(`[Security Alert] ExecutionRecord ${record.id} forced from EXECUTING to UNKNOWN. Human verification of external provider required.`);
             
             await AuditLogger.logAction({
-                tenantId: 'system_worker',
+                tenantId: record.tenantId,
                 actionDetails: {
                     event: 'RECONCILIATION_FORCED_UNKNOWN',
                     executionRecordId: record.id,

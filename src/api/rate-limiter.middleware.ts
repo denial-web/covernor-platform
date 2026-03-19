@@ -40,10 +40,8 @@ interface RateLimitOptions {
  */
 export function rateLimiter(opts: RateLimitOptions) {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const tenantId = req.user?.tenantId
-      || req.headers['x-tenant-id'] as string
-      || req.ip
-      || 'unknown';
+    const clientIp = req.ip || 'unknown';
+    const tenantId = req.user?.tenantId || 'anon';
 
     const redis = getRedis();
     if (!redis) {
@@ -51,7 +49,7 @@ export function rateLimiter(opts: RateLimitOptions) {
       return res.status(503).json({ error: 'Service temporarily unavailable. Rate limiter cannot verify request.' });
     }
 
-    const key = `api_ratelimit:${tenantId}:${req.method}:${req.baseUrl || req.path}`;
+    const key = `api_ratelimit:${clientIp}:${tenantId}:${req.method}:${req.baseUrl || req.path}`;
     try {
       const count = await redis.eval(RATE_LIMIT_LUA, 1, key, opts.windowSeconds) as number;
 
@@ -59,7 +57,7 @@ export function rateLimiter(opts: RateLimitOptions) {
       res.setHeader('X-RateLimit-Remaining', String(Math.max(0, opts.maxRequests - count)));
 
       if (count > opts.maxRequests) {
-        logger.warn(`[RateLimiter] Tenant ${tenantId} exceeded ${opts.maxRequests} reqs/${opts.windowSeconds}s on ${req.method} ${req.path}`);
+        logger.warn(`[RateLimiter] ${clientIp}/${tenantId} exceeded ${opts.maxRequests} reqs/${opts.windowSeconds}s on ${req.method} ${req.path}`);
         return res.status(429).json({
           error: `Rate limit exceeded. Max ${opts.maxRequests} requests per ${opts.windowSeconds} seconds.`,
           retryAfterSeconds: opts.windowSeconds,

@@ -50,7 +50,7 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
     return authenticateJWT(req, res, next, authHeader.slice(7));
   }
 
-  return authenticateAPIKey(req, res, next);
+  return authenticateAPIKey(req, res, next).catch(next);
 };
 
 function authenticateJWT(req: Request, res: Response, next: NextFunction, token: string) {
@@ -165,29 +165,33 @@ export function requireRole(...allowedRoles: UserRole[]) {
 /**
  * Login endpoint. Validates API key, looks up role from DB, issues JWT.
  */
-export const loginHandler = async (req: Request, res: Response) => {
-  const { tenantId, userId } = req.body;
-  const apiKey = req.headers['x-api-key'] as string | undefined;
+export const loginHandler = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { tenantId, userId } = req.body;
+    const apiKey = req.headers['x-api-key'] as string | undefined;
 
-  if (!tenantId || !userId) {
-    return res.status(400).json({ error: 'tenantId and userId are required.' });
+    if (!tenantId || !userId) {
+      return res.status(400).json({ error: 'tenantId and userId are required.' });
+    }
+
+    const expectedApiKey = process.env[`API_KEY_${tenantId}`] || process.env.ADMIN_API_KEY;
+    if (!expectedApiKey || !apiKey) {
+      return res.status(401).json({ error: 'API key required for authentication.' });
+    }
+
+    const a = Buffer.from(apiKey);
+    const b = Buffer.from(expectedApiKey);
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+      return res.status(401).json({ error: 'Invalid API key.' });
+    }
+
+    const role = await resolveUserRole(tenantId, userId);
+    const token = issueToken(userId, tenantId, role);
+
+    res.json({ token, expiresIn: '8h', role });
+  } catch (err) {
+    next(err);
   }
-
-  const expectedApiKey = process.env[`API_KEY_${tenantId}`] || process.env.ADMIN_API_KEY;
-  if (!expectedApiKey || !apiKey) {
-    return res.status(401).json({ error: 'API key required for authentication.' });
-  }
-
-  const a = Buffer.from(apiKey);
-  const b = Buffer.from(expectedApiKey);
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-    return res.status(401).json({ error: 'Invalid API key.' });
-  }
-
-  const role = await resolveUserRole(tenantId, userId);
-  const token = issueToken(userId, tenantId, role);
-
-  res.json({ token, expiresIn: '8h', role });
 };
 
 export const requireAdminAuth = requireAuth;

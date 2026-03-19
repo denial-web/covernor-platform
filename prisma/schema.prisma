@@ -148,11 +148,12 @@ model ApprovalToken {
 model GovernorPolicy {
   id          String   @id @default(uuid())
   tenantId    String   @default("default_tenant")
-  versionHash String   @unique // SHA-256 hash of the ruleset to prove exactly what executed
+  versionHash String
   rules       Json     // The actual Array of policies
   isActive    Boolean  @default(false)
   createdAt   DateTime @default(now())
 
+  @@unique([tenantId, versionHash])
   @@index([tenantId, isActive])
 }
 

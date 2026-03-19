@@ -140,6 +140,13 @@ if (require.main === module) {
 
     process.on('SIGINT', gracefulShutdown);
     process.on('SIGTERM', gracefulShutdown);
+
+    process.on('unhandledRejection', (reason: any) => {
+      logger.error('[Process] Unhandled promise rejection', {
+        error: reason?.message || String(reason),
+        stack: reason?.stack,
+      });
+    });
   });
 }
 
