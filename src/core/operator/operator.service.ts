@@ -303,6 +303,7 @@ export class OperatorService {
 
     // We ALWAYS log the action, even if it failed, before throwing the exception
     await AuditLogger.logAction({
+      tenantId: decision.tenantId,
       decisionId,
       actionDetails: {
         actor: 'Operator',
@@ -359,6 +360,7 @@ export class OperatorService {
     });
 
     await AuditLogger.logAction({
+      tenantId: report.tenantId,
       decisionId: report.decisionId,
       actionDetails: {
         actor: 'Operator',

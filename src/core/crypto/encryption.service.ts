@@ -1,11 +1,17 @@
 import crypto from 'crypto';
 import { logger } from '../../utils/logger';
 
-// 32-byte (256-bit) key for AES-256-GCM
-// Fallback key only for local dev. In production, provide a strong secret key via ENCRYPTION_MASTER_KEY.
-const ENCRYPTION_KEY = process.env.ENCRYPTION_MASTER_KEY 
-  ? Buffer.from(process.env.ENCRYPTION_MASTER_KEY, 'base64') 
-  : crypto.scryptSync('development_fallback_secret_do_not_use_v4', 'salt', 32);
+function getEncryptionKey(): Buffer {
+  if (process.env.ENCRYPTION_MASTER_KEY) {
+    return Buffer.from(process.env.ENCRYPTION_MASTER_KEY, 'base64');
+  }
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('CRITICAL: ENCRYPTION_MASTER_KEY environment variable is required in production.');
+  }
+  return crypto.scryptSync('development_fallback_secret_do_not_use_v4', 'covernor_dev_salt_v5', 32);
+}
+
+const ENCRYPTION_KEY = getEncryptionKey();
 
 const ALGORITHM = 'aes-256-gcm';
 

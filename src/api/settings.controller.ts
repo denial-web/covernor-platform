@@ -1,7 +1,7 @@
 import { Request, Response, Router } from 'express';
 
 import { EncryptionService } from '../core/crypto/encryption.service';
-import { requireAdminAuth } from './auth.middleware';
+import { requireAuth, requireRole } from './auth.middleware';
 import { OpenAIProvider } from '../core/minister/providers/openai.adapter';
 import { AnthropicProvider } from '../core/minister/providers/anthropic.adapter';
 import { OllamaProvider } from '../core/minister/providers/ollama.adapter';
@@ -19,13 +19,14 @@ const SaveSettingsSchema = z.object({
   base_url: z.string().optional(),
 });
 
-settingsRouter.use(requireAdminAuth);
+settingsRouter.use(requireAuth);
+settingsRouter.use(requireRole('admin'));
 
 // GET /api/settings/llm
 // Returns current active provider and whether keys are set (but NOT the raw keys)
 settingsRouter.get('/llm', async (req: Request, res: Response) => {
   try {
-    const tenantId = req.headers['x-tenant-id'] as string;
+    const tenantId = req.user!.tenantId;
     
     // Fetch settings for this tenant 
     const settings = await prisma.systemSettings.findMany({
@@ -61,7 +62,7 @@ settingsRouter.get('/llm', async (req: Request, res: Response) => {
 // Encrypts and saves keys
 settingsRouter.post('/llm/save', async (req: Request, res: Response) => {
   try {
-    const tenantId = req.headers['x-tenant-id'] as string;
+    const tenantId = req.user!.tenantId;
     const data = SaveSettingsSchema.parse(req.body);
 
     const upsertSetting = async (key: string, value: string) => {
@@ -112,7 +113,7 @@ settingsRouter.post('/llm/save', async (req: Request, res: Response) => {
 // Tests connection to the specified provider
 settingsRouter.post('/llm/test', async (req: Request, res: Response) => {
   try {
-    const tenantId = req.headers['x-tenant-id'] as string;
+    const tenantId = req.user!.tenantId;
     const { provider, key } = req.body;
     
     let apiKey = key;

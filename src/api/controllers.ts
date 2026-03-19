@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../db/client';
+import { AuditLogger } from '../db/audit.logger';
 import { WorkflowCoordinator } from '../core/workflow/coordinator.service';
 import { OperatorService } from '../core/operator/operator.service';
 import { logger } from '../utils/logger';
@@ -17,6 +18,12 @@ export const createTask = async (req: Request, res: Response) => {
     const idempotencyKey = req.headers['x-idempotency-key'] as string || undefined;
 
     if (!objective) return res.status(400).json({ error: 'Objective required' });
+    if (typeof objective !== 'string') return res.status(400).json({ error: 'Objective must be a string' });
+    if (objective.length > 5000) return res.status(400).json({ error: 'Objective too long (max 5000 chars)' });
+    if (context !== undefined && typeof context === 'object') {
+      const contextStr = JSON.stringify(context);
+      if (contextStr.length > 50000) return res.status(400).json({ error: 'Context too large (max 50KB)' });
+    }
 
     // Priority 2 Webhook Idempotency check 
     if (idempotencyKey) {
@@ -150,7 +157,6 @@ export const overrideDecision = async (req: Request, res: Response) => {
         return res.status(403).json({ error: 'Security Violation: You have already provided your signature for this decision. Another unique administrator must approve.' });
     }
 
-    // Phase 19: Expiration TTL on Pending Decisions (4 hours)
     if (Date.now() - decision.createdAt.getTime() > 1000 * 60 * 60 * 4) {
         logger.error(`[Security API] Decision ${decisionId} expired before collecting K-of-N signatures.`);
         return res.status(403).json({ error: 'Security Violation: This decision has expired waiting for human approval. The Advisor must replan.' });
@@ -158,17 +164,27 @@ export const overrideDecision = async (req: Request, res: Response) => {
 
     currentApprovers.push(adminUserId);
     const updatedApproversString = currentApprovers.join(',');
+
+    const atomicUpdate = await prisma.decision.updateMany({
+        where: {
+            id: decisionId,
+            decisionType: 'BLOCK_AND_ESCALATE',
+            approvalsCount: decision.approvalsCount,
+        },
+        data: {
+            approvalsCount: { increment: 1 },
+            approverIdentities: updatedApproversString,
+        },
+    });
+
+    if (atomicUpdate.count === 0) {
+        return res.status(409).json({ error: 'Concurrent approval detected. Please retry.' });
+    }
+
     const updatedApprovalsCount = (decision.approvalsCount || 0) + 1;
-    
+
     if (updatedApprovalsCount < decision.requiredApprovers) {
         logger.info(`[Human API] Recorded approval ${updatedApprovalsCount}/${decision.requiredApprovers} for Decision ${decisionId} by ${adminUserId}. Need more.`);
-        await prisma.decision.update({
-            where: { id: decisionId },
-            data: { 
-                approvalsCount: updatedApprovalsCount,
-                approverIdentities: updatedApproversString
-            }
-        });
         return res.status(200).json({ 
             message: `Approval recorded. ${updatedApprovalsCount} of ${decision.requiredApprovers} obtained. Action is still PENDING.`,
             approvalsCount: updatedApprovalsCount,
@@ -264,22 +280,26 @@ export const overrideDecision = async (req: Request, res: Response) => {
  */
 export const getMetrics = async (req: Request, res: Response) => {
   try {
-    const totalTasks = await prisma.task.count();
+    const tenantId = req.user?.tenantId || req.headers['x-tenant-id'] as string || 'default_tenant';
+
+    const totalTasks = await prisma.task.count({ where: { tenantId } });
     const tasksByStatus = await prisma.task.groupBy({
       by: ['status'],
+      where: { tenantId },
       _count: { status: true }
     });
 
-    const totalDecisions = await prisma.decision.count();
+    const totalDecisions = await prisma.decision.count({ where: { tenantId } });
     const decisionsByType = await prisma.decision.groupBy({
       by: ['decisionType'],
+      where: { tenantId },
       _count: { decisionType: true }
     });
 
     // Approximate latency calculation on recently completed execution records
     const recentExecutions = await prisma.executionRecord.findMany({
       take: 100,
-      where: { status: 'COMPLETED', completedAt: { not: null } },
+      where: { tenantId, status: 'COMPLETED', completedAt: { not: null } },
       orderBy: { completedAt: 'desc' },
       select: { completedAt: true, decision: { select: { proposal: { select: { task: { select: { createdAt: true } } } } } } }
     });
@@ -409,7 +429,21 @@ export const rollbackPolicy = async (req: Request, res: Response) => {
       })
     ]);
 
-    logger.info(`[Policy Registry] Covernor brain successfully rolled back to version ${versionHash}`);
+    const tenantId = req.user?.tenantId || req.headers['x-tenant-id'] as string || 'default_tenant';
+    const userId = req.user?.userId || 'unknown';
+
+    await AuditLogger.logAction({
+      tenantId,
+      actionDetails: {
+        actor: 'Admin',
+        action: 'policy_rollback',
+        targetVersion: versionHash,
+        performedBy: userId,
+      },
+      policyVersion: versionHash,
+    });
+
+    logger.info(`[Policy Registry] Covernor brain rolled back to ${versionHash} by ${userId}`);
     res.json({ message: `Successfully rolled back active policy to version: ${versionHash}` });
   } catch (error: any) {
     logger.error("Failed to rollback policy", { error: error.message });

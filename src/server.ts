@@ -1,5 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
+import helmet from 'helmet';
+import cors from 'cors';
 import Redis from 'ioredis';
 import routes from './api/routes';
 import { ExecutionReconciliationWorker } from './workers/execution-reconciliation.worker';
@@ -7,6 +9,7 @@ import { HumanEscalationWorker } from './workers/human-escalation.worker';
 import { AuditSnapshotWorker } from './workers/audit-snapshot.worker';
 import { rateLimiter } from './api/rate-limiter.middleware';
 import { logger } from './utils/logger';
+import { prisma } from './db/client';
 
 async function checkRedis(): Promise<void> {
   const host = process.env.REDIS_HOST || 'localhost';
@@ -35,6 +38,14 @@ async function checkRedis(): Promise<void> {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.use(helmet());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || '*',
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-id', 'x-user-id', 'x-api-key', 'x-idempotency-key'],
+  maxAge: 86400,
+}));
+
 app.use(express.json({ 
   limit: '100kb',
   verify: (req: any, res, buf) => {
@@ -45,7 +56,30 @@ app.use(express.json({
 app.use('/api', rateLimiter({ windowSeconds: 60, maxRequests: 100 }));
 app.use('/api', routes);
 
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/health', async (req, res) => {
+  const checks: Record<string, string> = { server: 'ok' };
+  try {
+    await prisma.$queryRawUnsafe('SELECT 1');
+    checks.database = 'ok';
+  } catch {
+    checks.database = 'error';
+  }
+  try {
+    const client = new Redis(
+      parseInt(process.env.REDIS_PORT || '6379', 10),
+      process.env.REDIS_HOST || 'localhost',
+      { maxRetriesPerRequest: 1, connectTimeout: 2000, lazyConnect: true }
+    );
+    await client.connect();
+    await client.ping();
+    await client.quit();
+    checks.redis = 'ok';
+  } catch {
+    checks.redis = 'error';
+  }
+  const healthy = Object.values(checks).every(v => v === 'ok');
+  res.status(healthy ? 200 : 503).json({ status: healthy ? 'healthy' : 'degraded', checks });
+});
 
 if (require.main === module) {
   checkRedis().then(() => {

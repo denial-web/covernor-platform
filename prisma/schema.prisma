@@ -156,6 +156,21 @@ model GovernorPolicy {
 }
 
 // ----------------------------------------------------------------------
+// V5 User Role Assignments (RBAC)
+// ----------------------------------------------------------------------
+model UserRole {
+  id        String   @id @default(uuid())
+  tenantId  String
+  userId    String
+  role      String   @default("viewer") // admin, approver, viewer, operator
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+}
+
+// ----------------------------------------------------------------------
 // V4 Multi-Provider Settings Map
 // ----------------------------------------------------------------------
 model SystemSettings {
