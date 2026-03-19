@@ -120,7 +120,7 @@ export const receiveMetaWebhook = async (req: Request, res: Response) => {
 
             const task = await prisma.task.create({
               data: {
-                tenantId: 'default_tenant', // In production, map this from the Page ID
+                tenantId: entry.id ? `meta_page_${entry.id}` : (process.env.DEFAULT_WEBHOOK_TENANT || 'default_tenant'),
                 idempotencyKey,
                 objective,
                 status: 'PENDING'

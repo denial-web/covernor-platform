@@ -139,8 +139,8 @@ async function resolveUserRole(tenantId: string, userId: string): Promise<UserRo
 
     return 'viewer';
   } catch (err: any) {
-    logger.warn(`[Auth] Failed to resolve role for ${userId}, defaulting to viewer`, { error: err.message });
-    return 'viewer';
+    logger.warn(`[Auth] Failed to resolve role for ${userId}`, { error: err.message });
+    throw err;
   }
 }
 

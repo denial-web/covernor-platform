@@ -14,14 +14,14 @@ const coordinator = WorkflowCoordinator.getInstance();
 export const createTask = async (req: Request, res: Response) => {
   try {
     const { objective, context } = req.body;
-    const tenantId = req.user?.tenantId || req.headers['x-tenant-id'] as string || 'default_tenant';
+    const tenantId = req.user!.tenantId;
     const idempotencyKey = req.headers['x-idempotency-key'] as string || undefined;
 
     if (!objective) return res.status(400).json({ error: 'Objective required' });
     if (typeof objective !== 'string') return res.status(400).json({ error: 'Objective must be a string' });
     if (objective.length > 5000) return res.status(400).json({ error: 'Objective too long (max 5000 chars)' });
-    if (context !== undefined && typeof context === 'object') {
-      const contextStr = JSON.stringify(context);
+    if (context !== undefined) {
+      const contextStr = typeof context === 'string' ? context : JSON.stringify(context);
       if (contextStr.length > 50000) return res.status(400).json({ error: 'Context too large (max 50KB)' });
     }
 
@@ -52,7 +52,7 @@ export const createTask = async (req: Request, res: Response) => {
 
 export const getProposal = async (req: Request, res: Response) => {
   try {
-    const tenantId = req.user?.tenantId || req.headers['x-tenant-id'] as string;
+    const tenantId = req.user!.tenantId;
     const proposal = await prisma.proposal.findUnique({ where: { id: req.params.id as string } });
     if (!proposal || proposal.tenantId !== tenantId) return res.status(404).json({ error: 'Proposal not found' });
     res.json(proposal);
@@ -64,7 +64,7 @@ export const getProposal = async (req: Request, res: Response) => {
 
 export const getDecision = async (req: Request, res: Response) => {
   try {
-    const tenantId = req.user?.tenantId || req.headers['x-tenant-id'] as string;
+    const tenantId = req.user!.tenantId;
     const decision = await prisma.decision.findFirst({ where: { proposalId: req.params.proposalId as string } });
     if (!decision || decision.tenantId !== tenantId) return res.status(404).json({ error: 'Decision not found' });
     res.json(decision);
@@ -76,7 +76,7 @@ export const getDecision = async (req: Request, res: Response) => {
 
 export const getEscalatedDecisions = async (req: Request, res: Response) => {
   try {
-    const tenantId = req.user?.tenantId || req.headers['x-tenant-id'] as string || 'default_tenant';
+    const tenantId = req.user!.tenantId;
     const decisions = await prisma.decision.findMany({ 
         where: { 
             tenantId,
@@ -101,7 +101,7 @@ export const getEscalatedDecisions = async (req: Request, res: Response) => {
 
 export const getAuditLogs = async (req: Request, res: Response) => {
   try {
-    const tenantId = req.user?.tenantId || req.headers['x-tenant-id'] as string;
+    const tenantId = req.user!.tenantId;
     const logs = await prisma.auditLog.findMany({ 
         where: { tenantId },
         orderBy: { timestamp: 'desc' }, 
@@ -122,7 +122,7 @@ const operator = new OperatorService();
 export const overrideDecision = async (req: Request, res: Response) => {
   try {
     const decisionId = req.params.id as string;
-    const tenantId = req.user?.tenantId || req.headers['x-tenant-id'] as string || 'default_tenant';
+    const tenantId = req.user!.tenantId;
     
     // 1. Validate Decision State
     const decision = await prisma.decision.findFirst({
@@ -258,6 +258,22 @@ export const overrideDecision = async (req: Request, res: Response) => {
       data: { status: 'APPROVED' }
     });
 
+    await AuditLogger.logAction({
+      tenantId,
+      proposalId: decision.proposalId,
+      decisionId: overrideDecision.id,
+      actionDetails: {
+        actor: 'HumanOverride',
+        action: 'approve_override',
+        originalDecisionId: decisionId,
+        approverIdentities: updatedApproversString,
+        approvalsCount: updatedApprovalsCount,
+        requiredApprovers: decision.requiredApprovers,
+        performedBy: adminUserId,
+      },
+      approverIdentities: updatedApproversString,
+    });
+
     // 3. Force Execution using the NEW decision ID
     const report = await operator.executeDecision(overrideDecision.id);
 
@@ -280,7 +296,7 @@ export const overrideDecision = async (req: Request, res: Response) => {
  */
 export const getMetrics = async (req: Request, res: Response) => {
   try {
-    const tenantId = req.user?.tenantId || req.headers['x-tenant-id'] as string || 'default_tenant';
+    const tenantId = req.user!.tenantId;
 
     const totalTasks = await prisma.task.count({ where: { tenantId } });
     const tasksByStatus = await prisma.task.groupBy({
@@ -348,7 +364,7 @@ export const getMetrics = async (req: Request, res: Response) => {
  */
 export const getTrainingDataset = async (req: Request, res: Response) => {
   try {
-    const tenantId = req.user?.tenantId || req.headers['x-tenant-id'] as string || 'default_tenant';
+    const tenantId = req.user!.tenantId;
 
     const rejectedDecisions = await prisma.decision.findMany({
       where: {
@@ -408,11 +424,12 @@ export const getTrainingDataset = async (req: Request, res: Response) => {
  */
 export const rollbackPolicy = async (req: Request, res: Response) => {
   try {
+    const tenantId = req.user!.tenantId;
     const { versionHash } = req.body;
     if (!versionHash) return res.status(400).json({ error: 'versionHash is required' });
 
-    const targetPolicy = await prisma.governorPolicy.findUnique({
-      where: { versionHash }
+    const targetPolicy = await prisma.governorPolicy.findFirst({
+      where: { versionHash, tenantId }
     });
 
     if (!targetPolicy) return res.status(404).json({ error: 'Policy version not found in registry' });
@@ -420,16 +437,14 @@ export const rollbackPolicy = async (req: Request, res: Response) => {
     // Transaction to safely swap active policies
     await prisma.$transaction([
       prisma.governorPolicy.updateMany({
-        where: { isActive: true },
+        where: { isActive: true, tenantId },
         data: { isActive: false }
       }),
       prisma.governorPolicy.update({
-        where: { versionHash },
+        where: { id: targetPolicy.id },
         data: { isActive: true }
       })
     ]);
-
-    const tenantId = req.user?.tenantId || req.headers['x-tenant-id'] as string || 'default_tenant';
     const userId = req.user?.userId || 'unknown';
 
     await AuditLogger.logAction({

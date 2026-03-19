@@ -34,13 +34,13 @@ export class PolicyEngine {
   /**
    * Evaluates a single action against all loaded policies.
    */
-  async evaluateOptions(actionType: string, parameters: Record<string, any> = {}, contextSignals: Record<string, any> = {}): Promise<{ results: PolicyResult[], versionHash: string }> {
+  async evaluateOptions(tenantId: string, actionType: string, parameters: Record<string, any> = {}, contextSignals: Record<string, any> = {}): Promise<{ results: PolicyResult[], versionHash: string }> {
     const results: PolicyResult[] = [];
     let loadedPolicies: Policy[] = [];
     let versionHash = 'default-allow-v1';
 
     // 1. Fetch from Policy Registry
-    const activePolicyRec = await prisma.governorPolicy.findFirst({ where: { isActive: true } });
+    const activePolicyRec = await prisma.governorPolicy.findFirst({ where: { isActive: true, tenantId } });
 
     if (activePolicyRec) {
         loadedPolicies = activePolicyRec.rules as any as Policy[];
@@ -54,10 +54,11 @@ export class PolicyEngine {
             loadedPolicies = parsed.policies || [];
             versionHash = crypto.createHash('sha256').update(file).digest('hex');
             try {
-                const existingCount = await prisma.governorPolicy.count();
+                const existingCount = await prisma.governorPolicy.count({ where: { tenantId } });
                 if (existingCount === 0) {
                     await prisma.governorPolicy.create({
                         data: {
+                            tenantId,
                             versionHash,
                             rules: loadedPolicies as any,
                             isActive: true

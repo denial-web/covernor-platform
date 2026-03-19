@@ -35,6 +35,19 @@ async function checkRedis(): Promise<void> {
   }
 }
 
+let healthRedis: Redis | null = null;
+function getHealthRedis(): Redis {
+  if (!healthRedis) {
+    healthRedis = new Redis(
+      parseInt(process.env.REDIS_PORT || '6379', 10),
+      process.env.REDIS_HOST || 'localhost',
+      { maxRetriesPerRequest: 1, connectTimeout: 2000 }
+    );
+    healthRedis.on('error', () => { healthRedis = null; });
+  }
+  return healthRedis;
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -65,20 +78,20 @@ app.get('/health', async (req, res) => {
     checks.database = 'error';
   }
   try {
-    const client = new Redis(
-      parseInt(process.env.REDIS_PORT || '6379', 10),
-      process.env.REDIS_HOST || 'localhost',
-      { maxRetriesPerRequest: 1, connectTimeout: 2000, lazyConnect: true }
-    );
-    await client.connect();
-    await client.ping();
-    await client.quit();
+    await getHealthRedis().ping();
     checks.redis = 'ok';
   } catch {
     checks.redis = 'error';
   }
   const healthy = Object.values(checks).every(v => v === 'ok');
   res.status(healthy ? 200 : 503).json({ status: healthy ? 'healthy' : 'degraded', checks });
+});
+
+app.use((err: any, req: any, res: any, next: any) => {
+  logger.error('[Unhandled Error]', { error: err.message, stack: err.stack, path: req.path });
+  if (!res.headersSent) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
 if (require.main === module) {

@@ -119,7 +119,7 @@ export class GovernorService {
 
     // Phase 5: Provenance Enforcement - Evaluate both parameters AND the runtime contextual metadata (e.g. Provenance source)
     const contextSignals: any = proposal.contextSignals || {};
-    const { results: policyResults, versionHash } = await engine.evaluateOptions(recommendedOption.actionType, recommendedOption.parameters, contextSignals);
+    const { results: policyResults, versionHash } = await engine.evaluateOptions(proposal.tenantId, recommendedOption.actionType, recommendedOption.parameters, contextSignals);
     
     // Determine overall risk and decision type
     let decisionType = 'APPROVE';
@@ -302,6 +302,7 @@ export class GovernorService {
     });
 
     await AuditLogger.logAction({
+      tenantId: proposal.tenantId,
       proposalId,
       decisionId: decision.id,
       actionDetails: {

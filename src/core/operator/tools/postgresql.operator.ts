@@ -68,8 +68,14 @@ export class PostgreSQLOperator implements BaseToolAdapter {
       }
     }
 
-    // Connect using environment default connection
-    const client = new Client({ connectionString: process.env.DATABASE_URL });
+    // Connect to analytics database only (never application database)
+    const connectionString = process.env.ANALYTICS_DATABASE_URL;
+    if (!connectionString) {
+      throw new Error(
+        'ANALYTICS_DATABASE_URL must be configured. The PostgreSQL operator must not connect to the application database.'
+      );
+    }
+    const client = new Client({ connectionString });
 
     try {
       await client.connect();
@@ -81,17 +87,11 @@ export class PostgreSQLOperator implements BaseToolAdapter {
         });
       }
 
-      // 2. Defense-in-depth: Enforce row limits using LIMIT in SQL before execution
-      let finalQuery = query.trim();
-      const limitMatch = finalQuery.match(/LIMIT\s+(\d+)/i);
-      if (limitMatch) {
-         const userLimit = parseInt(limitMatch[1], 10);
-         if (userLimit > this.contract.maxRowsAffected) {
-            finalQuery = finalQuery.replace(new RegExp(`LIMIT\\s+${userLimit}`, 'i'), `LIMIT ${this.contract.maxRowsAffected}`);
-         }
-      } else {
-         finalQuery = `${finalQuery} LIMIT ${this.contract.maxRowsAffected}`;
-      }
+      // 2. Defense-in-depth: Enforce row limits by wrapping query in subquery with outer LIMIT.
+      // This guarantees the result is bounded regardless of LIMIT clauses inside subqueries.
+      const trimmedQuery = query.trim();
+      const maxRows = this.contract.maxRowsAffected;
+      const finalQuery = `SELECT * FROM (${trimmedQuery}) AS _bounded LIMIT ${maxRows}`;
 
       const res = await client.query(finalQuery, values || []);
       

@@ -43,36 +43,36 @@ describe('PolicyEngine', () => {
   });
 
   it('should DENY destructive actions', async () => {
-    const { results } = await engine.evaluateOptions('DELETE_DB');
+    const { results } = await engine.evaluateOptions('default_tenant', 'DELETE_DB');
     expect(results).toHaveLength(1);
     expect(results[0].action).toBe('REJECT');
     expect(results[0].riskAssigned).toBe('CRITICAL');
   });
 
   it('should INJECT_CONSTRAINT for read operations', async () => {
-    const { results } = await engine.evaluateOptions('READ_RECORDS');
+    const { results } = await engine.evaluateOptions('default_tenant', 'READ_RECORDS');
     expect(results).toHaveLength(1);
     expect(results[0].action).toBe('INJECT_CONSTRAINT');
     expect(results[0].injectedConstraints).toEqual({ limit: 10 });
   });
 
   it('should ESCALATE conditional operations when threshold crossed', async () => {
-    const { results } = await engine.evaluateOptions('SPEND_MONEY', { amount: 500 });
+    const { results } = await engine.evaluateOptions('default_tenant', 'SPEND_MONEY', { amount: 500 });
     expect(results).toHaveLength(1);
     expect(results[0].action).toBe('ESCALATE');
     expect(results[0].riskAssigned).toBe('HIGH');
   });
 
   it('should ALLOW conditional operations when threshold is not crossed', async () => {
-    const { results } = await engine.evaluateOptions('SPEND_MONEY', { amount: 50 });
+    const { results } = await engine.evaluateOptions('default_tenant', 'SPEND_MONEY', { amount: 50 });
     // Since condition was not met, and no other rules block it, it defaults back to pass. No hard Deny hit.
     expect(results).toHaveLength(0);
   });
 
-  it('should DEFAULT ALLOW unknown safe operations', async () => {
-    const { results } = await engine.evaluateOptions('HARMLESS_ACTION');
+  it('should ESCALATE unknown actions (no policy covers them)', async () => {
+    const { results } = await engine.evaluateOptions('default_tenant', 'HARMLESS_ACTION');
     expect(results).toHaveLength(1);
-    expect(results[0].action).toBe('OK');
-    expect(results[0].policyId).toBe('DEFAULT_ALLOW');
+    expect(results[0].action).toBe('ESCALATE');
+    expect(results[0].policyId).toBe('DEFAULT_DENY');
   });
 });
