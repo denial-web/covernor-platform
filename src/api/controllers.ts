@@ -139,17 +139,18 @@ export const overrideDecision = async (req: Request, res: Response) => {
 
     // Priority 3 Security Hardening: Approval Token Anti-Replay
     const existingOverride = await prisma.decision.findFirst({
-        where: { proposalId: decision.proposalId, decisionType: 'HUMAN_OVERRIDE_APPROVED' }
+        where: { proposalId: decision.proposalId, decisionType: 'HUMAN_OVERRIDE_APPROVED' },
+        include: { executionRecord: true }
     });
-    if (existingOverride) {
+    if (existingOverride?.executionRecord?.status === 'COMPLETED') {
         logger.warn(`[Security API] Blocked replay attack on Decision ${decisionId}`);
-        return res.status(403).json({ error: 'Security Violation: Escalation has already been overridden. Anti-Replay enforced.' });
+        return res.status(403).json({ error: 'Security Violation: Escalation has already been overridden and executed. Anti-Replay enforced.' });
     }
 
     // ------------------------------------------------------------------
     // V2.1 Financial: Dual Approval Multi-Signature Counting & Identity
     // ------------------------------------------------------------------
-    const adminUserId = req.user?.userId || req.headers['x-user-id'] as string || 'anonymous_admin';
+    const adminUserId = req.user!.userId;
     const currentApprovers = decision.approverIdentities ? decision.approverIdentities.split(',') : [];
 
     if (currentApprovers.includes(adminUserId)) {

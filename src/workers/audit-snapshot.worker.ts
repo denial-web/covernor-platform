@@ -36,22 +36,18 @@ export class AuditSnapshotWorker {
         logger.info("[Audit Worker] Stopped.");
     }
 
-    private async getLastProcessedDate(): Promise<Date> {
+    private async getLastProcessedId(): Promise<string> {
         try {
             await fs.promises.access(CURSOR_FILE);
             const cursorStr = await fs.promises.readFile(CURSOR_FILE, 'utf-8');
-            const d = new Date(cursorStr.trim());
-            if (!isNaN(d.getTime())) {
-                return d;
-            }
+            return cursorStr.trim() || '';
         } catch (error) {
-            // File doesn't exist yet, proceed with epoch
+            return '';
         }
-        return new Date(0); // Epoch start if no cursor
     }
 
-    private async updateCursor(lastDate: Date) {
-        await fs.promises.writeFile(CURSOR_FILE, lastDate.toISOString());
+    private async updateCursor(lastId: string) {
+        await fs.promises.writeFile(CURSOR_FILE, lastId);
     }
 
     private async runSweep() {
@@ -59,19 +55,16 @@ export class AuditSnapshotWorker {
         this.isRunning = true;
 
         try {
-            const lastProcessed = await this.getLastProcessedDate();
+            const lastProcessedId = await this.getLastProcessedId();
             
-            // Query new audit logs
+            // Query new audit logs using id cursor (avoids timestamp-boundary record drops)
+            const whereClause = lastProcessedId ? { id: { gt: lastProcessedId } } : {};
             const logsToExport = await prisma.auditLog.findMany({
-                where: {
-                    timestamp: {
-                        gt: lastProcessed
-                    }
-                },
+                where: whereClause,
                 orderBy: {
-                    timestamp: 'asc' // Must process chronologically
+                    id: 'asc'
                 },
-                take: 1000 // Batch size
+                take: 1000
             });
 
             if (logsToExport.length === 0) {
@@ -100,9 +93,9 @@ export class AuditSnapshotWorker {
                 logger.debug(`[Audit Worker] Wrote ${logs.length} logs to ${filePath}`);
             }
 
-            // Update cursor to the very last timestamp processed
-            const highestTimestamp = logsToExport[logsToExport.length - 1].timestamp;
-            await this.updateCursor(highestTimestamp);
+            // Update cursor to the id of the last exported record
+            const lastExportedId = logsToExport[logsToExport.length - 1].id;
+            await this.updateCursor(lastExportedId);
             
             logger.info(`[Audit Worker] Successfully snapshot exported ${logsToExport.length} immutable records.`);
             

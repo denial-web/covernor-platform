@@ -87,9 +87,21 @@ export class PostgreSQLOperator implements BaseToolAdapter {
         });
       }
 
-      // 2. Defense-in-depth: Enforce row limits by wrapping query in subquery with outer LIMIT.
-      // This guarantees the result is bounded regardless of LIMIT clauses inside subqueries.
-      const trimmedQuery = query.trim();
+      // 2. Defense-in-depth: Strip SQL comments and enforce row limits via subquery wrapper.
+      const trimmedQuery = query.trim()
+        .replace(/--[^\n]*/g, '')       // strip single-line comments
+        .replace(/\/\*[\s\S]*?\*\//g, '') // strip block comments
+        .trim();
+      if (!trimmedQuery) {
+        await client.end();
+        return {
+          status: 'FAILED',
+          completedSteps: ['initialize'],
+          failedStep: 'validate_parameters',
+          failureCode: 'EMPTY_QUERY_AFTER_SANITIZATION',
+          rollbackAvailable: false
+        };
+      }
       const maxRows = this.contract.maxRowsAffected;
       const finalQuery = `SELECT * FROM (${trimmedQuery}) AS _bounded LIMIT ${maxRows}`;
 

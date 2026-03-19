@@ -87,8 +87,14 @@ export class GovernorService {
        const limits = capability.defaultScopeLimits;
        const params = recommendedOption.parameters || {};
 
-       if (limits.maxAmount !== undefined && typeof params.amount === 'number') {
-          if (params.amount > limits.maxAmount) {
+       if (typeof params.amount === 'number') {
+          if (params.amount <= 0) {
+             throw new GovernorRejectionError(
+               proposalId,
+               `Capability Scope Violation: Amount must be positive. Got ${params.amount} for '${capability.id}'.`
+             );
+          }
+          if (limits.maxAmount !== undefined && params.amount > limits.maxAmount) {
              throw new GovernorRejectionError(
                proposalId,
                `Capability Scope Violation: Amount ${params.amount} exceeds capability limit of ${limits.maxAmount} for '${capability.id}'.`

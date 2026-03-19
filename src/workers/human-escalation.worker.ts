@@ -57,12 +57,14 @@ export class HumanEscalationWorker {
         logger.warn(`[Escalation Worker] Found ${expiredTasks.length} expired 'AWAITING_HUMAN' tasks. Forcing to EXPIRED.`);
 
         for (const task of expiredTasks) {
-            await prisma.task.update({
-                where: { id: task.id },
-                data: {
-                    status: 'EXPIRED',
-                }
+            const result = await prisma.task.updateMany({
+                where: { id: task.id, status: 'AWAITING_HUMAN' },
+                data: { status: 'EXPIRED' }
             });
+            if (result.count === 0) {
+                logger.info(`[Escalation Lifecycle] Task ${task.id} already transitioned (likely approved). Skipping.`);
+                continue;
+            }
             logger.info(`[Escalation Lifecycle] Task ${task.id} timed out awaiting human review and was EXPIRED.`);
             
             await AuditLogger.logAction({

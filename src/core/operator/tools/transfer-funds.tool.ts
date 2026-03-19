@@ -18,12 +18,12 @@ export class TransferFundsOperator implements BaseToolAdapter {
     // Explicit Constraint Check
     const maxAmount = context.constraints?.maxAmount ?? Infinity;
 
-    if (!amount || !recipient) {
+    if (typeof amount !== 'number' || amount <= 0 || !recipient) {
       return {
         status: 'FAILED',
         completedSteps: ['initialize'],
         failedStep: 'validate_parameters',
-        failureCode: 'MISSING_PARAMETERS',
+        failureCode: typeof amount === 'number' && amount <= 0 ? 'INVALID_AMOUNT' : 'MISSING_PARAMETERS',
         rollbackAvailable: false
       };
     }
