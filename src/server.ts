@@ -5,6 +5,7 @@ import routes from './api/routes';
 import { ExecutionReconciliationWorker } from './workers/execution-reconciliation.worker';
 import { HumanEscalationWorker } from './workers/human-escalation.worker';
 import { AuditSnapshotWorker } from './workers/audit-snapshot.worker';
+import { rateLimiter } from './api/rate-limiter.middleware';
 import { logger } from './utils/logger';
 
 async function checkRedis(): Promise<void> {
@@ -41,6 +42,7 @@ app.use(express.json({
   }
 }));
 
+app.use('/api', rateLimiter({ windowSeconds: 60, maxRequests: 100 }));
 app.use('/api', routes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));

@@ -68,8 +68,27 @@ export class PolicyEngine {
                logger.warn("Race condition during policy seed, safe to ignore.", seedErr);
             }
         } catch (err) {
-            logger.warn("Could not load policies.json. The Covernor will default to pass-through.", err);
+            logger.error("Could not load policies.json. The Covernor will DENY ALL actions (fail-closed).", err);
+            results.push({
+              policyId: 'POLICY_LOAD_FAILURE',
+              passed: false,
+              action: 'REJECT',
+              reason: 'Policy engine could not load any policies. All actions are denied until policies are restored.',
+              riskAssigned: 'CRITICAL'
+            });
+            return { results, versionHash };
         }
+    }
+
+    if (loadedPolicies.length === 0) {
+      results.push({
+        policyId: 'NO_POLICIES_LOADED',
+        passed: false,
+        action: 'REJECT',
+        reason: 'No policies are configured. All actions are denied by default. Configure policies in the database or src/config/policies.json.',
+        riskAssigned: 'CRITICAL'
+      });
+      return { results, versionHash };
     }
 
     const applicablePolicies = loadedPolicies.filter(p => 
@@ -78,11 +97,11 @@ export class PolicyEngine {
 
     if (applicablePolicies.length === 0) {
       results.push({
-        policyId: 'DEFAULT_ALLOW',
-        passed: true,
-        action: 'OK',
-        reason: 'No restrictions apply to this action.',
-        riskAssigned: 'LOW'
+        policyId: 'DEFAULT_DENY',
+        passed: false,
+        action: 'ESCALATE',
+        reason: `No policy covers action type '${actionType}'. Unknown actions are escalated for human review.`,
+        riskAssigned: 'HIGH'
       });
       return { results, versionHash };
     }

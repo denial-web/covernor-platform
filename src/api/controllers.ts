@@ -13,7 +13,7 @@ const coordinator = WorkflowCoordinator.getInstance();
 export const createTask = async (req: Request, res: Response) => {
   try {
     const { objective, context } = req.body;
-    const tenantId = req.headers['x-tenant-id'] as string || 'default_tenant';
+    const tenantId = req.user?.tenantId || req.headers['x-tenant-id'] as string || 'default_tenant';
     const idempotencyKey = req.headers['x-idempotency-key'] as string || undefined;
 
     if (!objective) return res.status(400).json({ error: 'Objective required' });
@@ -45,7 +45,7 @@ export const createTask = async (req: Request, res: Response) => {
 
 export const getProposal = async (req: Request, res: Response) => {
   try {
-    const tenantId = req.headers['x-tenant-id'] as string;
+    const tenantId = req.user?.tenantId || req.headers['x-tenant-id'] as string;
     const proposal = await prisma.proposal.findUnique({ where: { id: req.params.id as string } });
     if (!proposal || proposal.tenantId !== tenantId) return res.status(404).json({ error: 'Proposal not found' });
     res.json(proposal);
@@ -57,7 +57,7 @@ export const getProposal = async (req: Request, res: Response) => {
 
 export const getDecision = async (req: Request, res: Response) => {
   try {
-    const tenantId = req.headers['x-tenant-id'] as string;
+    const tenantId = req.user?.tenantId || req.headers['x-tenant-id'] as string;
     const decision = await prisma.decision.findFirst({ where: { proposalId: req.params.proposalId as string } });
     if (!decision || decision.tenantId !== tenantId) return res.status(404).json({ error: 'Decision not found' });
     res.json(decision);
@@ -69,7 +69,7 @@ export const getDecision = async (req: Request, res: Response) => {
 
 export const getEscalatedDecisions = async (req: Request, res: Response) => {
   try {
-    const tenantId = req.headers['x-tenant-id'] as string || 'default_tenant';
+    const tenantId = req.user?.tenantId || req.headers['x-tenant-id'] as string || 'default_tenant';
     const decisions = await prisma.decision.findMany({ 
         where: { 
             tenantId,
@@ -94,7 +94,7 @@ export const getEscalatedDecisions = async (req: Request, res: Response) => {
 
 export const getAuditLogs = async (req: Request, res: Response) => {
   try {
-    const tenantId = req.headers['x-tenant-id'] as string;
+    const tenantId = req.user?.tenantId || req.headers['x-tenant-id'] as string;
     const logs = await prisma.auditLog.findMany({ 
         where: { tenantId },
         orderBy: { timestamp: 'desc' }, 
@@ -115,7 +115,7 @@ const operator = new OperatorService();
 export const overrideDecision = async (req: Request, res: Response) => {
   try {
     const decisionId = req.params.id as string;
-    const tenantId = req.headers['x-tenant-id'] as string || 'default_tenant';
+    const tenantId = req.user?.tenantId || req.headers['x-tenant-id'] as string || 'default_tenant';
     
     // 1. Validate Decision State
     const decision = await prisma.decision.findFirst({
@@ -142,7 +142,7 @@ export const overrideDecision = async (req: Request, res: Response) => {
     // ------------------------------------------------------------------
     // V2.1 Financial: Dual Approval Multi-Signature Counting & Identity
     // ------------------------------------------------------------------
-    const adminUserId = req.headers['x-user-id'] as string || 'anonymous_admin';
+    const adminUserId = req.user?.userId || req.headers['x-user-id'] as string || 'anonymous_admin';
     const currentApprovers = decision.approverIdentities ? decision.approverIdentities.split(',') : [];
 
     if (currentApprovers.includes(adminUserId)) {
@@ -328,7 +328,7 @@ export const getMetrics = async (req: Request, res: Response) => {
  */
 export const getTrainingDataset = async (req: Request, res: Response) => {
   try {
-    const tenantId = req.headers['x-tenant-id'] as string || 'default_tenant';
+    const tenantId = req.user?.tenantId || req.headers['x-tenant-id'] as string || 'default_tenant';
 
     const rejectedDecisions = await prisma.decision.findMany({
       where: {

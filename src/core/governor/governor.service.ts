@@ -64,6 +64,57 @@ export class GovernorService {
           throw new GovernorRejectionError(proposalId, `Operator Contract Violation: The provided parameters for ${recommendedOption.actionType} strictly violated explicit allowlists. Details: ${error.message}`);
        }
     }
+
+    // ------------------------------------------------------------------
+    // Scope Limit Enforcement: maxRowsAffected from OperatorContract
+    // ------------------------------------------------------------------
+    if (contract.maxRowsAffected > 0) {
+       const requestedRows = recommendedOption.parameters?.limit
+         ?? recommendedOption.parameters?.maxRows
+         ?? recommendedOption.parameters?.count;
+       if (typeof requestedRows === 'number' && requestedRows > contract.maxRowsAffected) {
+          throw new GovernorRejectionError(
+            proposalId,
+            `Scope Limit Violation: Requested ${requestedRows} rows but operator contract for '${recommendedOption.actionType}' allows max ${contract.maxRowsAffected}.`
+          );
+       }
+    }
+
+    // ------------------------------------------------------------------
+    // Capability Scope Limit Enforcement: defaultScopeLimits from Registry
+    // ------------------------------------------------------------------
+    if (capability.defaultScopeLimits) {
+       const limits = capability.defaultScopeLimits;
+       const params = recommendedOption.parameters || {};
+
+       if (limits.maxAmount !== undefined && typeof params.amount === 'number') {
+          if (params.amount > limits.maxAmount) {
+             throw new GovernorRejectionError(
+               proposalId,
+               `Capability Scope Violation: Amount ${params.amount} exceeds capability limit of ${limits.maxAmount} for '${capability.id}'.`
+             );
+          }
+       }
+
+       if (limits.maxRows !== undefined) {
+          const rows = params.limit ?? params.maxRows ?? params.count;
+          if (typeof rows === 'number' && rows > limits.maxRows) {
+             throw new GovernorRejectionError(
+               proposalId,
+               `Capability Scope Violation: Row count ${rows} exceeds capability limit of ${limits.maxRows} for '${capability.id}'.`
+             );
+          }
+       }
+
+       if (limits.currency !== undefined && params.currency) {
+          if (String(params.currency).toUpperCase() !== String(limits.currency).toUpperCase()) {
+             throw new GovernorRejectionError(
+               proposalId,
+               `Capability Scope Violation: Currency '${params.currency}' not allowed. Capability '${capability.id}' only permits '${limits.currency}'.`
+             );
+          }
+       }
+    }
     // ------------------------------------------------------------------
 
     // Phase 5: Provenance Enforcement - Evaluate both parameters AND the runtime contextual metadata (e.g. Provenance source)
