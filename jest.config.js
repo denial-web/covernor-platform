@@ -3,5 +3,8 @@ module.exports = {
   testEnvironment: 'node',
   moduleFileExtensions: ['ts', 'js'],
   testMatch: ['**/tests/**/*.spec.ts'],
-  setupFilesAfterEnv: ['<rootDir>/tests/setup/prisma-mock.ts'],
+  setupFilesAfterEnv: [
+    '<rootDir>/tests/setup/redis-mock.ts',
+    '<rootDir>/tests/setup/prisma-mock.ts',
+  ],
 };

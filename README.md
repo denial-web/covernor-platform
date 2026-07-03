@@ -161,7 +161,7 @@ Or configure via the **LLM Settings** panel in the Approval Console UI.
 - SQLite database (swap to PostgreSQL for production)
 - In-memory crypto keys (integrate real KMS/HSM for production)
 - Mock payment execution (integrate your payment gateway)
-- Minimal test suite (needs comprehensive coverage)
+- Test suite growing (24 Jest cases: critic regression, demo-escalation offline, policy engine) — expand integration coverage
 - No TLS configuration (add via reverse proxy or config)
 
 ### What you'd add for regulated industries
