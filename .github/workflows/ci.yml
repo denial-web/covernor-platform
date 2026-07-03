@@ -28,7 +28,7 @@ jobs:
         with:
           node-version: '20'
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - run: npx prisma generate
       - run: npx prisma db push
         env:
