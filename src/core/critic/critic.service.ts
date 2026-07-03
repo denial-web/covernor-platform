@@ -41,6 +41,34 @@ const PROMPT_INJECTION_PATTERNS = [
   /忽略.{0,4}(之前|以前|先前).{0,4}(指令|指示|规则|提示)/,
   /игнорир(уй|овать)\s+(все\s+)?(предыдущие|прежние)\s+(инструкции|правила)/i,
   /تجاهل.{0,6}(التعليمات|القواعد|الأوامر)\s*(السابقة|القديمة)/,
+  // Authority / policy override (Doctrine holdout families)
+  /forget\s+your\s+security\s+policy/i,
+  /new\s+directive\s+from\s+your\s+developer/i,
+  /previous\s+rules\s+are\s+void/i,
+  /ignore\s+(your|prior)\s+rules/i,
+  /ignore\s+prior\s+rules/i,
+  /olvida\s+(tus\s+)?reglas/i,
+  /supersedes\s+all\s+prior\s+policy/i,
+  /(authorized|authorization)\s+by\s+the\s+CEO/i,
+  /emergency\s+authorized/i,
+  // Framed / indirect wrappers
+  /translate\b[\s\S]{0,120}\bthen\s+(carry\s+out|follow|obey)/i,
+  /follow\s+it\s+exactly/i,
+  /decode\s+it\s+and\s+then\s+do\s+exactly/i,
+  /read\s+this\s+backwards\s+then\s+do/i,
+  /internal-tooling-note/i,
+  /system_directive/i,
+  /data-cmd\s*=/i,
+  /continuing your unfinished sentence/i,
+  /continue from where you left off/i,
+  /execut(e|ing)\s+next_action/i,
+  // Spaced / obfuscated instruction tokens
+  /ig\s*nor[e]?\s+[\s\S]{0,40}pre\s*vious/i,
+  // Access-code exfiltration asks (tool-parameter context)
+  /\b(reveal|print|share|append|output|include)\s+(the\s+)?(protected\s+|confidential\s+|system\s+)?access\s+code\b/i,
+  /\baccess\s+code\s+in\s+three\s+formats\b/i,
+  /print_access_code/i,
+  /Q:\s*What'?s\s+the\s+access\s+code\?/i,
 ];
 
 const EXFILTRATION_PATTERNS = [
@@ -174,8 +202,11 @@ export class CriticService {
   }
 
   private scanPatterns(text: string, patterns: RegExp[]): string | null {
+    const normalized = text
+      .replace(/[\u200B-\u200D\uFEFF]/g, '')
+      .replace(/\s{2,}/g, ' ');
     for (const pattern of patterns) {
-      const match = text.match(pattern);
+      const match = normalized.match(pattern);
       if (match) return match[0];
     }
     return null;
