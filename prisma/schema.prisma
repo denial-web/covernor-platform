@@ -7,9 +7,8 @@ generator client {
 // ARCHITECTURE NOTES on Database Design
 // ==========================================
 // 1. ENUMS: We use `String` fields instead of Prisma `enum`s for statuses
-//    because SQLite (used for development and edge environments) has weak
-//    support for native enums. The fields are validated at the application 
-//    layer using Zod.
+//    so the same application validation works across providers. Values are
+//    validated at the application layer using Zod.
 // 2. CASCADING: We intentionally DO NOT use cascading deletions 
 //    (e.g., `onDelete: Cascade`). This is an audit-critical system, and 
 //    orphaning records safely preserves the forensic trail. Hard deletes 
@@ -17,7 +16,7 @@ generator client {
 // ==========================================
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 model Task {

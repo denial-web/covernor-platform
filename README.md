@@ -158,10 +158,9 @@ Or configure via the **LLM Settings** panel in the Approval Console UI.
 - 43 security fixes across 6 audit rounds
 
 ### What's still development-stage
-- SQLite database (swap to PostgreSQL for production)
 - In-memory crypto keys (integrate real KMS/HSM for production)
 - Mock payment execution (integrate your payment gateway)
-- Test suite growing (24 Jest cases: critic regression, demo-escalation offline, policy engine) — expand integration coverage
+- Test suite growing (28 Jest cases: critic regression incl. multilingual injection, demo-escalation offline, policy engine) — expand integration coverage
 - No TLS configuration (add via reverse proxy or config)
 
 ### What you'd add for regulated industries
@@ -180,7 +179,7 @@ See [docs/UPGRADE_PLAN.md](./docs/UPGRADE_PLAN.md) for the full production roadm
 | Version | Focus | Status |
 |---|---|---|
 | **v0.1** | Core governance engine, policy engine, capability tokens, dual approval, audit chain | Current |
-| **v0.2** | PostgreSQL migration, OpenTelemetry, structured logging, API versioning | Planned |
+| **v0.2** | OpenTelemetry, structured logging, API versioning | In progress (PostgreSQL landed) |
 | **v0.3** | Enterprise identity (OIDC/SAML), KMS integration, field-level encryption | Planned |
 | **v0.4** | Agent memory, learning loops, fine-tuning pipeline, plugin system | Planned |
 
@@ -223,7 +222,6 @@ See [docs/UPGRADE_PLAN.md](./docs/UPGRADE_PLAN.md) for the full production roadm
 We welcome contributions. See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for guidelines.
 
 The most impactful areas right now:
-- PostgreSQL adapter and migration scripts
 - Additional operator tools (Stripe, Twilio, AWS)
 - Test coverage (unit, integration, security)
 - Documentation and examples

@@ -12,7 +12,11 @@
     "test": "jest",
     "demo": "ts-node src/demo.ts",
     "demo-escalation": "ts-node src/scripts/demo-escalation.ts",
-    "invoke-webhook": "ts-node src/scripts/invoke-webhook.ts"
+    "invoke-webhook": "ts-node src/scripts/invoke-webhook.ts",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:migrate": "prisma migrate deploy",
+    "db:push": "prisma db push"
   },
   "keywords": [
     "ai-safety",
@@ -35,8 +39,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.79.0",
-    "@libsql/client": "^0.17.0",
-    "@prisma/adapter-libsql": "^7.5.0",
+    "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.5.0",
     "axios": "^1.13.6",
     "bullmq": "^5.71.0",

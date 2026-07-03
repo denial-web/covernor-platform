@@ -30,7 +30,8 @@ This guide walks you through installing and running the Covernor Platform from s
 |---|---|---|
 | **Node.js** | >= 18 | Runtime for the backend and build tools |
 | **npm** | >= 9 (ships with Node) | Package management |
-| **Redis** | >= 6 | Required by BullMQ for job orchestration |
+| **Docker** | >= 20 (recommended) | PostgreSQL + Redis via `docker compose` |
+| **Redis** | >= 6 | Required by BullMQ (included in `docker compose`) |
 
 ### Installing Node.js
 
@@ -89,8 +90,8 @@ This single command:
 1. Creates `.env` from `.env.example` (if it doesn't exist)
 2. Installs backend dependencies (`npm install`)
 3. Installs frontend dependencies (`approval-console/`)
-4. Generates the Prisma client
-5. Creates the SQLite database and pushes the schema
+4. Starts PostgreSQL and Redis (`docker compose up -d`)
+5. Generates the Prisma client and applies the schema
 6. Checks that Redis is reachable
 
 ### Manual setup (if you prefer step-by-step)
@@ -111,7 +112,7 @@ cd approval-console
 npm install
 cd ..
 
-# 5. Database
+# 5. Database (requires PostgreSQL — use docker compose up -d first)
 npx prisma generate
 npx prisma db push
 
@@ -129,7 +130,7 @@ All configuration lives in the `.env` file at the project root. The defaults wor
 
 | Variable | Default | Description |
 |---|---|---|
-| `DATABASE_URL` | `file:./dev.db` | SQLite database path (no external DB needed) |
+| `DATABASE_URL` | `postgresql://covernor:covernor@localhost:15432/covernor` | Application database (`docker compose up -d`; host port 15432 avoids local Postgres conflicts) |
 | `ADMIN_API_KEY` | `development_admin_key` | Shared key between frontend and backend |
 
 ### Optional settings
@@ -429,6 +430,15 @@ This is by design. When the LLM call fails (bad key, network timeout, model not 
 
 To fix: verify your API key or local LLM server is working via the "Test Connection" button in the LLM Settings UI.
 
+### Database connection errors (`P1010`, `invalid database string`)
+
+1. Start Docker services: `docker compose up -d --wait`
+2. Ensure `.env` uses PostgreSQL, not the legacy SQLite URL:
+   ```
+   DATABASE_URL="postgresql://covernor:covernor@localhost:15432/covernor?schema=public"
+   ```
+3. Apply schema: `npx prisma migrate deploy` (or `npx prisma db push` on a fresh DB)
+
 ### Ollama "Connection refused"
 
 Make sure Ollama is actually serving:
@@ -452,8 +462,7 @@ ollama pull llama3       # pull if missing
 
 If you want to start fresh:
 ```bash
-rm dev.db
+docker compose down -v
+docker compose up -d --wait
 npx prisma db push
 ```
-
-This creates a new empty database with the current schema.

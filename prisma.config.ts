@@ -7,6 +7,8 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env.DATABASE_URL || "file:./dev.db",
+    url:
+      process.env.DATABASE_URL ||
+      "postgresql://covernor:covernor@localhost:15432/covernor?schema=public",
   },
 });

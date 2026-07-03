@@ -21,7 +21,7 @@ Thanks for your interest in contributing. This project governs AI execution in h
 
 ### High Impact
 
-- **PostgreSQL adapter** — Replace SQLite with PostgreSQL for production use
+- **PostgreSQL** — Application database via Prisma + `@prisma/adapter-pg` (`docker compose up -d`)
 - **Operator tools** — New tool implementations (Stripe, Twilio, S3, etc.) following the `BaseToolAdapter` interface
 - **Test coverage** — Unit tests for services, integration tests for API endpoints, security-focused tests
 - **Documentation** — Setup guides for different environments, architecture explanations, API examples

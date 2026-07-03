@@ -35,6 +35,12 @@ const PROMPT_INJECTION_PATTERNS = [
   /\bDAN\b/,
   /\bpretend\s+you\b/i,
   /\broleplay\s+as\b/i,
+  // Multilingual (aligned with Nexus immune scanner coverage)
+  /ignora\s+(todas?\s+)?(las\s+)?instrucciones\s+(anteriores|previas)/i,
+  /ignore[rz]?\s+(toutes?\s+)?(les\s+)?instructions\s+(pr[eé]c[eé]dentes|ant[eé]rieures)/i,
+  /忽略.{0,4}(之前|以前|先前).{0,4}(指令|指示|规则|提示)/,
+  /игнорир(уй|овать)\s+(все\s+)?(предыдущие|прежние)\s+(инструкции|правила)/i,
+  /تجاهل.{0,6}(التعليمات|القواعد|الأوامر)\s*(السابقة|القديمة)/,
 ];
 
 const EXFILTRATION_PATTERNS = [
