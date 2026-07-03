@@ -16,7 +16,8 @@
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:migrate": "prisma migrate deploy",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "fixtures:sync-doctrine": "ts-node scripts/sync-doctrine-critic-fixtures.ts"
   },
   "keywords": [
     "ai-safety",

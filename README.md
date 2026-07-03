@@ -160,7 +160,7 @@ Or configure via the **LLM Settings** panel in the Approval Console UI.
 ### What's still development-stage
 - In-memory crypto keys (integrate real KMS/HSM for production)
 - Mock payment execution (integrate your payment gateway)
-- Test suite growing (28 Jest cases: critic regression incl. multilingual injection, demo-escalation offline, policy engine) — expand integration coverage
+- Test suite growing (35 Jest cases: critic regression incl. multilingual injection + Doctrine holdout fixtures, demo-escalation offline, policy engine) — expand integration coverage
 - No TLS configuration (add via reverse proxy or config)
 
 ### What you'd add for regulated industries
